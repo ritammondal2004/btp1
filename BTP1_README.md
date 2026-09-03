@@ -6,12 +6,12 @@ Financial markets are characterized by low signal-to-noise ratios, high volatili
 
 ----
 ## 2. Literatures
-- **Zou et al. (2023)**
+- **Zou et al. (2023)** [link](https://arxiv.org/pdf/2212.02721)
     - Full Title: A Novel Deep Reinforcement Learning Based Automated Stock Trading System Using Cascaded LSTM Networks
     - Authors: Jie Zou, Jiashu Lou, Baohua Wang, Sixue Liu
     - Journal: Expert Systems With Applications
 
-- **Huang et al. (2024)**
+- **Huang et al. (2024)** [link](https://www.mdpi.com/2227-7390/12/24/4020)
     - Full Title: A Self-Rewarding Mechanism in Deep Reinforcement Learning for Trading Strategy Optimization
     - Authors: Yuling Huang, Chujin Zhou, Lin Zhang, Xiaoping Lu
     - Journal: Mathematics
@@ -41,25 +41,57 @@ This translates into three specific, testable hypotheses:
 
 ## 4. Research Gap
 
+> 📸 **[Zou et al. 2023, p. 9, Tables 2 and 3](https://arxiv.org/pdf/2212.02721)**
+
+*A Novel Deep Reinforcement Learning Based Automated Stock Trading System Using Cascaded LSTM Networks*
+
+
 Existing DRL trading studies have explored several important mechanisms, but largely along separate methodological dimensions. **Zou et al. (2023)** demonstrate the benefit of LSTM-based temporal representation for PPO trading, establishing the value of historical sequence information. 
 
-> 📸 **SCREENSHOT — [Zou et al. 2023, p. 9, Tables 2 and 3]**
-> - **Capture:** "Table 2: Comparison of different time windows in LSTM" and the corresponding text confirming TW=30 as the best parameter.
-> - **Purpose:** Supports the effectiveness of LSTM-based temporal memory over flat representations.
+<div style="display: flex; justify-content: space-between; gap: 20px; align-items: flex-start;">
+  <img src="ss/zou_etal_table2.png" alt="zou_etal_table2" width="510" height="200" style="flex: 1; max-width: 49%; display: block;">
+  <img src="ss/zou_etal_table3.png" alt="zou_etal_table3" width="510" height="200" style="flex: 1; max-width: 49%; display: block;">
+</div>
+
+---
+
+> 📸 **[Huang et al. 2024, p. 1 and p. 8](https://www.mdpi.com/2227-7390/12/24/4020)** 
+
+*A Self-Rewarding Mechanism in Deep Reinforcement Learning for Trading Strategy Optimization*
+
 
 **Huang et al. (2024)** investigate adaptive/self-rewarding mechanisms, showing that reward design can substantially affect trading performance and mitigate risk.
 
-> 📸 **SCREENSHOT — [Huang et al. 2024, p. 15, Table 3]**
-> - **Capture:** "Table 3. Performance comparison of various methods on six datasets", specifically highlighting the SRDDQN results.
-> - **Purpose:** Supports the importance of advanced reward design on overall trading performance.
+- Existing DRL trading systems mostly use static, manually designed reward functions, which do not adapt well to unstable and changing financial markets 
+
+- The unresolved problem is how to build a **dynamic reward mechanism** that can adjust during learning and remain responsive to market changes 
+
+- This paper addresses that gap by proposing a self-rewarding RL framework that combines expert labels with learned reward prediction 
+
+<div style="display: flex; justify-content: space-between; gap: 20px; align-items: flex-start;">
+  <img src="ss/Huang_pg8.png" alt="Huang et al pg8" width="510" height="350" style="flex: 1; max-width: 48%; display: block;">
+  <img src="ss/Huang_page1.png" alt="Huang et al page1" width="510" height="350" style="flex: 1; max-width: 49%; display: block;">
+</div>
+
+<div style="text-align: center; margin-top: 15px;">
+  <img src="ss/Huang_pg8_diagram.png" alt="Huang et al pg8 diagram" width="600" height="350" style="display: block; margin: 0 auto;">
+</div>
+
+---
+
+
+> 📸 **[Millea 2021, p. 21, Section 12.1](https://www.mdpi.com/2306-5729/6/11/119)**
+
+*Deep Reinforcement Learning for Trading—A Critical Survey*
 
 **Millea (2021)** highlights the insufficient treatment of realistic market frictions such as transaction costs, slippage, and spread in the majority of DRL research.
 
-> 📸 **[Deep Reinforcement Learning for Trading—A Critical Survey Millea 2021, p. 21, Section 12.1 "Common Ground"]**
-> - **Capture:** The specific bullet point that reads: *"Very few papers consider all three factors: transaction cost, slippage... and spread."*
-> - **Purpose:** Supports the market-friction/realism gap in current DRL literature.
 
-![Millea_2021](ss/Millea2021_research_gap.png)
+<div style="text-align: center; margin-top: 15px;">
+  <img src="ss/Millea2021_research_gap.png" alt="Millea2021_research_gap" width="600" height="500" style="display: block; margin: 0 auto;">
+</div>
+
+---
 
 Meanwhile, **Liu et al. / FinRL-Meta (2024)** emphasizes the absolute necessity of realistic dynamic environments and strict walk-forward evaluation to prevent look-ahead bias and overfitting.
 
@@ -67,13 +99,24 @@ Meanwhile, **Liu et al. / FinRL-Meta (2024)** emphasizes the absolute necessity 
 > - **Capture:** Figure 5: "A rolling window of training-testing-trading pipeline with dynamic dataset".
 > - **Purpose:** Supports the necessity of realistic dynamic/walk-forward evaluation.
 
-Finally, **Wang & Liu (2025)** demonstrate the benefits of adaptive risk-sensitive policies under changing market conditions. 
+----
 
+Finally, **Wang & Liu (2025)** demonstrate the benefits of adaptive risk-sensitive policies under changing market conditions. They highlight that prior deep reinforcement learning research has focused predominantly on equities and forex, leaving commodity futures underexplored. Specifically, previous commodity-based DRL studies were limited in adaptive agent-switching mechanisms or lacked portfolio-level optimization, failing to fully address the distinctive structural volatility and supply-shock complexity of petroleum futures. Furthermore, the authors identify a critical, practical gap for real-world deployment: even advanced proposed frameworks do not yet explicitly model futures contract roll mechanics, expiration-induced volatility, or liquidity constraints. 
+
+> 📸 **[Wang & Liu (2025), Page 3 and Page 4, section 2.3](https://www.mdpi.com/1911-8074/18/7/347)** 
+
+*Risk-Sensitive Deep Reinforcement Learning for Portfolio Optimization*
+
+![Wang_&_Liu_1](ss/Wang_Liu2025_1.png) 
+
+![Wang_&_Liu_2](ss/Wang_Liu2025_pg21.png)
+
+---
 
 However, **among the studies reviewed for this project, we did not find a controlled experimental framework that isolates these mechanisms incrementally within the same PPO trading environment**. In particular, the separate contributions of **(1) temporal memory, (2) dense risk-aware reward shaping, and (3) turnover regularization** are not systematically decomposed under identical data, cost assumptions, training conditions, and evaluation metrics.
-             
+                   
 Taken together, these studies motivate a controlled investigation of how temporal memory, risk-aware reward design, and friction control interact within a common trading framework. Among the studies reviewed, we did not find a four-stage ablation that isolates these mechanisms under identical data, cost assumptions, training conditions, and evaluation metrics. This BTP-1 therefore proposes such a controlled comparison.
-
+                             
 Therefore, this BTP-1 proposes a controlled four-stage ablation:
 
 $$
