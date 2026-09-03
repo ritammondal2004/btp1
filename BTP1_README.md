@@ -93,19 +93,30 @@ Existing DRL trading studies have explored several important mechanisms, but lar
 
 ---
 
-Meanwhile, **Liu et al. / FinRL-Meta (2024)** emphasizes the absolute necessity of realistic dynamic environments and strict walk-forward evaluation to prevent look-ahead bias and overfitting.
+> 📸 **[Liu et al. 2024, p. 3, 11, 27](https://link.springer.com/article/10.1007/s10994-023-06511-w)**
 
-> 📸 **SCREENSHOT — [Liu et al. 2024, p. 13, Figure 5]**
-> - **Capture:** Figure 5: "A rolling window of training-testing-trading pipeline with dynamic dataset".
-> - **Purpose:** Supports the necessity of realistic dynamic/walk-forward evaluation.
+*Dynamic datasets and market environments for financial reinforcement learning*
+
+Despite progress in financial reinforcement learning, existing studies still rely heavily on historical backtesting environments that may not represent real market conditions adequately. This creates a **simulation-to-reality** gap, where strong backtest results do not necessarily translate into robust live trading performance. The literature identifies several unresolved data-centric challenges, including **survivorship bias, low signal-to-noise ratio**, and **model overfitting**, which continue to limit the reliability and real-world deployment of FinRL agents  
+
+<div style="display: flex; justify-content: space-between; gap: 20px; align-items: flex-start;">
+  <img src="ss/Liu_et_al_challenges_pg3.png" alt="Lie et al pg3" width="510" height="350" style="flex: 1; max-width: 48%; display: block;">
+  <img src="ss/Liu_et_al_intro_pg11.png" alt="Lie et al pg11" width="510" height="350" style="flex: 1; max-width: 49%; display: block;">
+</div>  
+
+<div style="text-align: center; margin-top: 15px;">
+  <img src="ss/Liu_et_al_pg27.png" alt="Liu et al Traidng in real market" width="650" height="300" style="display: block; margin: 0 auto;">
+</div>
 
 ----
-
-Finally, **Wang & Liu (2025)** demonstrate the benefits of adaptive risk-sensitive policies under changing market conditions. They highlight that prior deep reinforcement learning research has focused predominantly on equities and forex, leaving commodity futures underexplored. Specifically, previous commodity-based DRL studies were limited in adaptive agent-switching mechanisms or lacked portfolio-level optimization, failing to fully address the distinctive structural volatility and supply-shock complexity of petroleum futures. Furthermore, the authors identify a critical, practical gap for real-world deployment: even advanced proposed frameworks do not yet explicitly model futures contract roll mechanics, expiration-induced volatility, or liquidity constraints. 
 
 > 📸 **[Wang & Liu (2025), Page 3 and Page 4, section 2.3](https://www.mdpi.com/1911-8074/18/7/347)** 
 
 *Risk-Sensitive Deep Reinforcement Learning for Portfolio Optimization*
+
+Finally, **Wang & Liu (2025)** demonstrate the benefits of adaptive risk-sensitive policies under changing market conditions. They highlight that prior deep reinforcement learning research has focused predominantly on equities and forex, leaving commodity futures underexplored. Specifically, previous commodity-based DRL studies were limited in adaptive agent-switching mechanisms or lacked portfolio-level optimization, failing to fully address the distinctive structural volatility and supply-shock complexity of petroleum futures. Furthermore, the authors identify a critical, practical gap for real-world deployment: even advanced proposed frameworks do not yet explicitly model futures contract roll mechanics, expiration-induced volatility, or liquidity constraints. 
+
+
 
 ![Wang_&_Liu_1](ss/Wang_Liu2025_1.png) 
 
