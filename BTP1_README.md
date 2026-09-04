@@ -143,8 +143,6 @@ Despite progress in financial reinforcement learning, existing studies still rel
 ---
 
 
-
-
 ### Combined Research Gap
 
 Taken together, the reviewed studies address important but largely **separate aspects** of DRL-based financial trading:
@@ -169,15 +167,11 @@ However, **among the studies reviewed for this project, we did not find a contro
 
 Therefore, this BTP-1 proposes a controlled four-stage ablation:
 
-$$
-
-\boxed{
-
-\text{PPO} \rightarrow \text{LSTM-PPO} \rightarrow \text{LSTM-PPO+DSR} \rightarrow \text{LSTM-PPO+DSR+Turnover}
-
-}
-
-$$
+<div align="center" style="margin: 12px 0;">
+  <div style="display: inline-block; padding: 14px 18px; border: 1px solid #d0d7de; border-radius: 8px; background-color: #0d1117; color: #f0f6fc; font-weight: 600; font-size: 1.05em;">
+    PPO → LSTM-PPO → LSTM-PPO + DSR → LSTM-PPO + DSR + Turnover
+  </div>
+</div>
 
 to empirically quantify the incremental effect of each mechanism on **return, risk-adjusted performance, drawdown, turnover, and cost-adjusted trading stability**.
 
