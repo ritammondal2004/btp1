@@ -26,7 +26,7 @@ Financial markets are characterized by low signal-to-noise ratios, high volatili
     - Author: Adrian Millea
     - Journal: Data
 
-- **Wang & Liu (2025)**
+- **Wang & Liu (2025)** [link](https://www.mdpi.com/1911-8074/18/7/347)
     - Full Title: ART-DRL: Adaptive Risk-Sensitive Deep Reinforcement Learning
 
 ---
@@ -46,11 +46,19 @@ This translates into three specific, testable hypotheses:
 *A Novel Deep Reinforcement Learning Based Automated Stock Trading System Using Cascaded LSTM Networks*
 
 
-Existing DRL trading studies have explored several important mechanisms, but largely along separate methodological dimensions. **Zou et al. (2023)** demonstrate the benefit of LSTM-based temporal representation for PPO trading, establishing the value of historical sequence information. 
+Although deep reinforcement learning has shown promise for automated stock trading, existing approaches remain constrained by the noisy, unstable, and highly dynamic nature of financial market data. Prior machine learning models are also prone to overfitting, which reduces their generalization ability in real trading environments. In addition, reinforcement learning methods originally developed for gaming are not directly adaptable to financial data with low signal-to-noise ratios and uneven market behavior, which leads to performance limitations. Even in the proposed cascaded LSTM-PPO framework, further improvement still depends on unresolved issues such as the need for larger training datasets and more effective reward functions to improve stability and control pullback risk. Therefore, a clear research gap remains in developing more robust deep reinforcement learning trading systems that can better handle noisy financial data, generalize reliably, and achieve improved risk-adjusted performance 
 
-<div style="display: flex; justify-content: space-between; gap: 20px; align-items: flex-start;">
-  <img src="ss/zou_etal_table2.png" alt="zou_etal_table2" width="510" height="200" style="flex: 1; max-width: 49%; display: block;">
-  <img src="ss/zou_etal_table3.png" alt="zou_etal_table3" width="510" height="200" style="flex: 1; max-width: 49%; display: block;">
+
+<div style="text-align: center; margin-top: 15px;">
+  <img src="ss/Zou_etal_pg1.png" alt="Zou_etal_pg1" width="680" height="390" style="display: block; margin: 0 auto;">
+</div> 
+
+<div style="text-align: center; margin-top: 15px;">
+  <img src="ss/Zou_etal_pg12.png" alt="Zou_etal_pg12" width="600" height="550" style="display: block; margin: 0 auto;">
+</div> 
+
+<div style="text-align: center; margin-top: 17px;">
+  <img src="ss/Zou_etal_pg13.png" alt="Zou_etal_pg13" width="600" height="400" style="display: block; margin: 0 auto;">
 </div>
 
 ---
@@ -75,7 +83,7 @@ Existing DRL trading studies have explored several important mechanisms, but lar
 
 <div style="text-align: center; margin-top: 15px;">
   <img src="ss/Huang_pg8_diagram.png" alt="Huang et al pg8 diagram" width="600" height="350" style="display: block; margin: 0 auto;">
-</div>
+</div>   
 
 ---
 
@@ -83,13 +91,17 @@ Existing DRL trading studies have explored several important mechanisms, but lar
 > 📸 **[Millea 2021, p. 21, Section 12.1](https://www.mdpi.com/2306-5729/6/11/119)**
 
 *Deep Reinforcement Learning for Trading—A Critical Survey*
-
-**Millea (2021)** highlights the insufficient treatment of realistic market frictions such as transaction costs, slippage, and spread in the majority of DRL research.
-
+                
+Despite increasing interest in deep reinforcement learning for financial trading, the literature remains methodologically inconsistent and difficult to compare across studies. Existing works frequently use different datasets, different time periods, and different preprocessing techniques, which makes it difficult to determine whether reported performance differences are caused by the learning algorithm itself or by variation in the input data. In addition, only a limited number of studies examine model performance across multiple market types, leaving the generalizability of DRL-based trading systems insufficiently understood. Reproducibility is further weakened by the limited availability of source code and the incomplete reporting of implementation details such as hyperparameters and network architecture. Therefore, an important research gap remains in developing more standardized, comparable, and reproducible evaluation practices for DRL-based trading research
+         
 
 <div style="text-align: center; margin-top: 15px;">
   <img src="ss/Millea2021_research_gap.png" alt="Millea2021_research_gap" width="600" height="500" style="display: block; margin: 0 auto;">
-</div>
+</div>   
+
+<div style="text-align: center; margin-top: 15px;">
+  <img src="ss/Millea2021_sec12_2_pg21.png" alt="Millea2021_sec12_2_pg21" width="600" height="400" style="display: block; margin: 0 auto;">
+</div>  
 
 ---
 
@@ -114,13 +126,18 @@ Despite progress in financial reinforcement learning, existing studies still rel
 
 *Risk-Sensitive Deep Reinforcement Learning for Portfolio Optimization*
 
-Finally, **Wang & Liu (2025)** demonstrate the benefits of adaptive risk-sensitive policies under changing market conditions. They highlight that prior deep reinforcement learning research has focused predominantly on equities and forex, leaving commodity futures underexplored. Specifically, previous commodity-based DRL studies were limited in adaptive agent-switching mechanisms or lacked portfolio-level optimization, failing to fully address the distinctive structural volatility and supply-shock complexity of petroleum futures. Furthermore, the authors identify a critical, practical gap for real-world deployment: even advanced proposed frameworks do not yet explicitly model futures contract roll mechanics, expiration-induced volatility, or liquidity constraints. 
+- Finally, **Wang & Liu (2025)** demonstrate the benefits of adaptive risk-sensitive policies under changing market conditions. They highlight that prior deep reinforcement learning research has focused predominantly on **equities and forex**, leaving commodity futures underexplored. Specifically, previous commodity-based DRL studies were limited in **adaptive agent-switching mechanisms or lacked portfolio-level optimization**, failing to fully address the distinctive structural volatility and supply-shock complexity of petroleum futures. 
+- The paper also identifies a second, more practical gap: even its own proposed framework does not yet explicitly model roll mechanics, expiration effects, or liquidity constraints, which limits real-world deployment. 
 
-
-
-![Wang_&_Liu_1](ss/Wang_Liu2025_1.png) 
-
-![Wang_&_Liu_2](ss/Wang_Liu2025_pg21.png)
+       
+         
+<div style="text-align: center; margin-top: 15px;">
+  <img src="ss/Wang_Liu2025_1.png" alt="Wang_Liu2025_1" width="650" height="300" style="display: block; margin: 0 auto;">
+</div>          
+              
+<div style="text-align: center; margin-top: 15px;">
+  <img src="ss/Wang_Liu2025_2.png" alt="Wang_Liu2025_2" width="650" height="300" style="display: block; margin: 0 auto;">  
+</div>          
 
 ---
 
