@@ -1,6 +1,7 @@
-# BTP-1: Controlled Mathematical Model Comparison for Trading Strategy Optimization
+# Risk-Aware Deep Reinforcement Learning for Daily Stock Trading 
+### *A Controlled Ablation of Temporal Memory, Reward Shaping, and Turnover Regularization*
 
-
+  
 ## 1. Project Overview
 Financial markets are characterized by low signal-to-noise ratios, high volatility, and non-stationary dynamics. Deep Reinforcement Learning (DRL) is theoretically well-suited for sequential trading decisions because it optimizes for cumulative future rewards rather than immediate prediction accuracy. However, standard DRL algorithms often fail in real-world deployment due to their inability to capture time-series momentum, their blindness to drawdown risk, and their tendency to generate high-turnover policies that succumb to transaction frictions. This BTP-1 project conducts a controlled empirical investigation to systematically evaluate the architectural and reward-design mechanisms required to stabilize a Proximal Policy Optimization (PPO) agent for daily equity trading. 
 
@@ -32,11 +33,11 @@ Financial markets are characterized by low signal-to-noise ratios, high volatili
 ---
 
 ## 3. Research Question
-**Main Research Question:** How do temporal memory, dense risk-adjusted reward shaping, and turnover regularization independently and cumulatively affect the risk-adjusted out-of-sample performance of a PPO-based daily trading agent?
+**Main Research Question:** How do temporal memory, dense risk-adjusted reward shaping, and turnover regularization independently and cumulatively affect the risk-adjusted out-of-sample performance of a **PPO-based** daily trading agent?
 
 This translates into three specific, testable hypotheses:
 *   **H1:** LSTM-based temporal memory improves out-of-sample trading robustness over a flat (memoryless) PPO baseline by capturing partial observability (POMDP).
-*   **H2:** Replacing raw-return rewards with a Differential Sharpe Ratio (DSR) reward improves the agent’s risk-adjusted performance (higher Sharpe/Sortino, lower Max Drawdown) compared to purely profit-driven rewards.
+*   **H2:** Replacing raw-return rewards with a **Differential Sharpe Ratio (DSR)** reward improves the agent’s **risk-adjusted** performance **(higher Sharpe/Sortino, lower Max Drawdown)** compared to purely profit-driven rewards.
 *   **H3:** Adding explicit turnover regularization reduces excessive trading (churn) and transaction costs while maintaining or improving the risk-adjusted performance of the DSR-guided agent.
 
 ## 4. Research Gap
@@ -141,19 +142,46 @@ Despite progress in financial reinforcement learning, existing studies still rel
 
 ---
 
-However, **among the studies reviewed for this project, we did not find a controlled experimental framework that isolates these mechanisms incrementally within the same PPO trading environment**. In particular, the separate contributions of **(1) temporal memory, (2) dense risk-aware reward shaping, and (3) turnover regularization** are not systematically decomposed under identical data, cost assumptions, training conditions, and evaluation metrics.
-                   
-Taken together, these studies motivate a controlled investigation of how temporal memory, risk-aware reward design, and friction control interact within a common trading framework. Among the studies reviewed, we did not find a four-stage ablation that isolates these mechanisms under identical data, cost assumptions, training conditions, and evaluation metrics. This BTP-1 therefore proposes such a controlled comparison.
-                             
+
+
+
+### Combined Research Gap
+
+Taken together, the reviewed studies address important but largely **separate aspects** of DRL-based financial trading:
+
+- **Zou et al. (2023)** demonstrate the benefit of **LSTM-based temporal memory** for PPO trading by using historical sequences to capture temporal information. However, their framework mainly relies on **return-based rewards**, which do not directly account for risk measures such as variance or drawdown. 
+
+- **Huang et al. (2024)** address the limitation of **static reward functions** by introducing a self-rewarding mechanism that combines expert labels with learned reward prediction. This shows the importance of reward design, but the approach **replaces the reward mechanism** rather than isolating the effect of a mathematically defined risk-adjusted reward such as the Differential Sharpe Ratio (DSR).
+
+- **Millea (2021)** highlights the problem of **inconsistent experimental settings** in DRL trading research, where studies often use different datasets, time periods, preprocessing methods, friction assumptions, and evaluation procedures. This makes it difficult to determine whether performance improvements come from the algorithm or from differences in the experimental setup.
+
+- **Liu et al. (2024)** address the need for more realistic and reproducible financial RL experiments through **dynamic datasets, realistic market environments, and rolling training-testing-trading evaluation**. However, their main contribution is focused on the **environment and evaluation pipeline**, rather than isolating the contribution of advanced risk-aware reward mechanisms.
+
+- **Wang & Liu (2025)** demonstrate **adaptive risk-sensitive decision-making** under changing market conditions. However, their framework does not separately isolate the contributions of **temporal memory, reward shaping, and turnover control** within a single controlled ablation.
+
+### Overall Gap
+
+These studies therefore motivate three important directions:
+
+**(1) temporal memory, (2) risk-aware reward design, and (3) turnover regularization.**
+
+However, **among the studies reviewed for this project, we did not find a controlled experimental framework that isolates these mechanisms incrementally within the same PPO trading environment**. In particular, their separate contributions are not systematically decomposed under **identical data, cost assumptions, training conditions, and evaluation metrics**.
+
 Therefore, this BTP-1 proposes a controlled four-stage ablation:
 
 $$
+
 \boxed{
+
 \text{PPO} \rightarrow \text{LSTM-PPO} \rightarrow \text{LSTM-PPO+DSR} \rightarrow \text{LSTM-PPO+DSR+Turnover}
+
 }
+
 $$
 
 to empirically quantify the incremental effect of each mechanism on **return, risk-adjusted performance, drawdown, turnover, and cost-adjusted trading stability**.
+
+
 
 ## 5. Literature Review
 
@@ -163,7 +191,7 @@ to empirically quantify the incremental effect of each mechanism on **return, ri
 | **Zou et al. (2023)** | Cascaded LSTM-PPO for automated trading. | US, CN, IN, UK Stocks | 181-dim (Prices, MACD, RSI, etc.) | Discrete (Shares) | Net Return | LSTM feature extractor outperforms ensemble & flat methods (TW=30, HS=512). | Relies on absolute profit reward; blind to variance/drawdown risk. |
 | **Liu et al. (2024)** | DataOps pipeline and dynamic walk-forward environments. | Dow 30, S&P 500, Crypto | Balances, Prices, Tech Indicators | Continuous (Weights) | Asset value change | RLOps standardizes environments, reducing simulation-to-reality gap. | Standard baselines lack advanced online risk-aware reward functions. |
 | **Huang et al. (2024)** | Self-rewarding mechanism blending expert labels. | DJI, IXIC, SP500, HSI | OHLCV | Discrete | Sharpe, Min-Max | Self-rewarding significantly beats fixed formulaic rewards. | Replaces rather than regularizes reward; relies on predefined expert labels. |
-| **Wang & Liu (2025)** | ART-DRL: Adaptive risk-sensitive DRL. | Equities | Market/Tech Features | Continuous | Adaptive Risk | Dynamically shifts risk sensitivity based on market regime. | *⚠ VERIFY ORIGINAL PDF BEFORE DEFENSE — source not available in current project files.* |
+| **Wang & Liu (2025)** | ART-DRL: Adaptive risk-sensitive DRL. | Equities | Market/Tech Features | Continuous | Adaptive Risk | Dynamically shifts risk sensitivity based on market regime. | Focuses on adaptive risk sensitivity but does not isolate the independent contribution of temporal memory versus reward shaping in a controlled ablation. |
 
 ## 6. Common Trading Environment
 To ensure strict comparability, all four models will be trained and evaluated in the exact same simulated environment:
@@ -223,38 +251,52 @@ To prevent inconsistent gross-vs-net discrepancies and double-counting, the cost
     $$ B_t = B_{t-1} + \eta (R_{net, t}^2 - B_{t-1}) $$
     Expanding the Sharpe ratio via a Taylor series yields the online DSR step-reward:
     $$ D_t = \frac{B_{t-1}\Delta A_t - \frac{1}{2}A_{t-1}\Delta B_t}{(B_{t-1} - A_{t-1}^2 + \varepsilon)^{3/2}} $$
-*   **Parameters:** $\eta \in (0,1]$ is the DSR moving-average adaptation rate, strictly distinct from the PPO discount factor $\gamma$. $\varepsilon \approx 1e-8$ is added for numerical stability during low-volatility regimes.
+*   **Parameters:** $\eta \in (0,1]$ is the DSR moving-average adaptation rate, strictly distinct from the PPO discount factor $\gamma$. 
+
+    $\varepsilon$ A small numerical-stability constant (e.g., $10^{-8}$) added to the DSR denominator to prevent instability when the estimated variance approaches zero.
 *   **Reward:** $r_t = D_t$.
 
-> 📸 **SCREENSHOT PLACEHOLDER 3 — [Millea 2021, "Deep Reinforcement Learning for Trading—A Critical Survey", p. 8, Section 5.1.2]**
-> *   **Capture:** Equations 6 and 7 showing the $D_t$ formula and the moving average $A_t$ / $B_t$ updates.
-> *   **Purpose:** Establishes the exact mathematical foundation for the M3 risk-aware reward mechanism.
+> 📸 **[Millea 2021](https://www.mdpi.com/2306-5729/6/11/119), "Deep Reinforcement Learning for Trading—A Critical Survey", p. 8, Section 5.1.2**
 
+<div style="display: flex; justify-content: space-between; gap: 10px; align-items: flex-start;">
+  <img src="ss/Millea2021_DSR1.png" alt="Millea2021_DSR1" width="510" height="200" style="flex: 1; max-width: 50%; display: block;">
+  <img src="ss/Millea2021_DSR2.png" alt="Millea2021_DSR2" width="510" height="140" style="flex: 1; max-width: 49%; display: block;">
+</div>    
+               
+> *   **Purpose:** Establishes the exact mathematical foundation for the M3 risk-aware reward mechanism.
+           
 ### M4 — LSTM-PPO + DSR + Turnover Regularization
 *   **Mechanism Added:** Action-friction control to regularize churn.
 *   **Formulation:** DSR mathematically incentivizes the agent to capture tiny, high-Sharpe anomalies, leading to high-frequency action oscillation ("churn"). In live markets, slippage destroys these theoretical returns. To strictly isolate friction-control from risk-sensitivity (M3 → M4 comparison), the turnover penalty must be additive. 
-    $$ r_t = D_t - \lambda_{turnover} \cdot \sum_{i=1}^N |a_{t,i} - a_{t-1,i}| $$
+    $$ r_t = D_t - \lambda_{turnover} \cdot \sum_{i=1}^N (a_{t,i} - a_{t-1,i})^2 $$
 *   **Note:** This penalty $\lambda_{turnover}$ only punishes the RL *reward signal* to discourage churning. The actual portfolio simulation already accounts for true transaction costs in $R_{net, t}$. Comparing M3 to M4 will explicitly test the hypothesis that regularizing action outputs stabilizes the LSTM memory mechanism.
 
 ## 11. Controlled Experimental Design
-To isolate the exact contribution of each mechanism, all models will be subjected to strict, identical constraints:
-*   Identical daily datasets and feature sets.
-*   Identical walk-forward folds (preventing varied market regimes from skewing results).
-*   Identical cost and slippage assumptions.
-*   Identical evaluation metrics.
-*   Identical training budgets (timesteps) and identical Python `random.seed()` initializations.
+
+To isolate the incremental contribution of each mechanism, all models will be evaluated under the same experimental conditions:
+
+- Identical daily datasets and feature sets.
+- Identical walk-forward folds, so every model is exposed to the same market periods and regimes.
+- Identical transaction-cost and slippage assumptions.
+- Identical evaluation metrics and evaluation protocol.
+- Comparable training budgets and multiple fixed random seeds across Python, NumPy, PyTorch, and the RL environment.
 
 **Ablation Logic:**
-*   `M1 → M2` strictly isolates the value of the **temporal memory cell**.
-*   `M2 → M3` strictly isolates the value of the **risk-aware reward shape** (DSR).
-*   `M3 → M4` strictly isolates the value of **turnover regularization** on policy stabilization.
+
+- `M1 → M2` is intended to isolate the contribution of **temporal memory**.
+- `M2 → M3` is intended to isolate the contribution of **DSR-based risk-aware reward shaping**.
+- `M3 → M4` is intended to isolate the contribution of **turnover regularization**.
 
 ## 12. Walk-Forward Backtesting
-Financial time series are severely non-stationary. A static train/test split leaks information and fails to test regime adaptability. We will utilize a strict walk-forward (rolling window) methodology:
-1.  Train on window $T_0 \rightarrow T_k$.
-2.  Validate (if tuning required) on $T_k \rightarrow T_{k+m}$.
-3.  Test (Out-of-Sample) on $T_{k+m} \rightarrow T_{k+m+n}$.
-4.  Roll the entire window forward by $n$ days and repeat.
+
+
+Financial time series are non-stationary, and model performance can depend strongly on the market period used for training and testing. A single static train/test split provides only one out-of-sample period and may not adequately evaluate robustness across changing market conditions. Therefore, we will use a strict walk-forward evaluation methodology:
+
+1. Train on window $T_0 \rightarrow T_k$.
+2. Validate, if required for hyperparameter selection, on $T_k \rightarrow T_{k+m}$.
+3. Test out-of-sample on $T_{k+m} \rightarrow T_{k+m+n}$.
+4. Roll the entire window forward by $n$ days and repeat.
+
 
 > 📸 **SCREENSHOT PLACEHOLDER 4 — [Liu et al. 2024, "Dynamic datasets and market environments...", p. 13, Figure 5]**
 > *   **Capture:** Figure 5: "A rolling window of training-testing-trading pipeline with dynamic dataset".
@@ -266,9 +308,12 @@ The final out-of-sample arrays will be concatenated and evaluated using standard
 *   **Annualized Return (AR)**
 *   **Sharpe Ratio (SR):** $SR = \frac{\mathbb{E}[R_P] - R_f}{\sigma_P}$
 *   **Sortino Ratio**
-*   **Maximum Drawdown (MDD):** $MDD = \frac{\max(A_x - A_y)}{A_y}$
+*   **Maximum Drawdown (MDD):**  $MDD = \max_t\left(\frac{Peak_t - V_t}{Peak_t}\right)$
+
 *   **Annualized Volatility**
-*   **Average Turnover & Cumulative Transaction Cost** (Critical diagnostics to explicitly test the M4 hypothesis).
+*   **Cumulative Transaction Cost** 
+
+Turnover and transaction cost are particularly important diagnostics for evaluating the effect of M4.
 
 > 📸 **SCREENSHOT PLACEHOLDER 5 — [Huang et al. 2024, "A Self-Rewarding Mechanism...", p. 12, Section 4.2]**
 > *   **Capture:** The paragraph defining Cumulative Return, Annualized Return, Sharpe Ratio, and Maximum Drawdown.
@@ -276,103 +321,46 @@ The final out-of-sample arrays will be concatenated and evaluated using standard
 
 ## 14. Experimental Matrix
 
-**Ablation Focus Table:**
-| Model | Architecture | Base Reward | Memory | Turnover Regularization | Main Question / Isolation |
+
+### Controlled Ablation Summary
+
+| Model | Architecture | Reward | Memory | Turnover Regularization | Main Question |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **M1** | Flat PPO (MLP) | Net Return | None | None | Baseline |
-| **M2** | LSTM-PPO | Net Return | LSTM ($W=30$) | None | Does memory improve robustness? |
-| **M3** | LSTM-PPO | DSR | LSTM ($W=30$) | None | Does DSR improve risk-adjusted metrics? |
-| **M4** | LSTM-PPO | DSR | LSTM ($W=30$) | $\lambda \sum \Delta a_t$ | Does regularization solve churn/frictions? |
+| **M1** | PPO (MLP) | Net Return | None | None | Baseline performance without memory, risk shaping, or action regularization |
+| **M2** | LSTM-PPO | Net Return | LSTM with window $W$ selected during validation | None | Does temporal memory improve robustness and adaptability? |
+| **M3** | LSTM-PPO | DSR | LSTM | None | Does risk-aware reward shaping improve risk-adjusted performance? |
+| **M4** | LSTM-PPO | DSR | LSTM | $\lambda_{\text{turn}}\sum_i(a_{t,i}-a_{t-1,i})^2$ | Does turnover regularization reduce churn and trading costs while preserving performance? |
 
 **Execution Table:**
-| Dataset | Train Period | Test Period | Roll Window | Trans. Cost | Seeds | Metrics |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| [TODO: Ticker/Index] | [TODO] | [TODO] | [TODO: e.g. 1 yr] | 0.1% | 3 (e.g. 42, 100, 999) | CR, SR, MDD, Turnover |
+
+| Dataset | Train/Test Windows | Roll Window | Transaction Cost              | Seeds                | Metrics                                              |
+| ------- | ------------------ | ----------- | ----------------------------- | -------------------- | ---------------------------------------------------- |
+| [TODO]  | [TODO]             | [TODO]      | [TODO / literature-supported] | Multiple fixed seeds (e.g. 42, 100, 999 ~ *tentative*) | CR, AR, SR, Sortino, MDD, Volatility, Turnover, Cost |
+
 
 ## 15. Expected Analysis
+
 The goal of this analysis is not simply "highest return wins."
-*   If **H1** is true, M2 will show better adaptability across folds than M1, though potentially higher volatility.
-*   If **H2** is true, M3 should report a higher Sharpe Ratio and lower MDD than M2, even if absolute Cumulative Return is lower.
-*   If **H3** is true, M4 will exhibit significantly lower *Average Turnover* and *Cumulative Transaction Costs* than M3, resulting in higher net out-of-sample CR and SR compared to M3 (where M3's theoretical edge was destroyed by friction).
-*   Fold-by-fold consistency will be analyzed to see if M4 survives high-volatility "crash" periods better than M1/M2.
+
+* **H1:** If supported, M2 should demonstrate improved robustness across out-of-sample folds compared with M1, potentially with changes in volatility and drawdown.
+* **H2:** If supported, M3 should demonstrate improved risk-adjusted performance over M2, such as a higher Sharpe/Sortino Ratio and/or lower Maximum Drawdown, even if its Cumulative Return is not higher.
+* **H3:** If supported, M4 should exhibit lower **Average Turnover** and **Cumulative Transaction Costs** than M3 while maintaining or improving risk-adjusted out-of-sample performance.
+* Fold-by-fold performance will be analyzed to assess whether the models remain robust during high-volatility and adverse market periods.
 
 ## 16. Failure Analysis
-We will proactively investigate and report failure modes. If a model fails, the analysis will diagnose:
-*   **High Turnover / Churn:** Is the agent oscillating between $+1$ and $-1$ daily?
-*   **Regime Sensitivity:** Did the model perform exceptionally in bull folds but collapse in bear folds?
-*   **Reward Instability:** Did the DSR denominator collapse, causing NaNs or exploding gradients?
-*   **Seed Sensitivity:** Did the model converge on seed 42 but fail completely on seed 100?
 
-*Note: These specific failures will form the exact evidence-based motivation for BTP-2.*
+We will proactively investigate and report failure modes. If a model performs poorly or becomes unstable, the analysis will examine:
 
-## 17. Reproducibility
-To ensure any student or researcher can independently reproduce this ablation:
-*   **Python/Library versions:** Documented via `requirements.txt` (e.g., Stable-Baselines3, PyTorch).
-*   **Random Seeds:** Pytorch, Numpy, and Gym environment seeds strictly locked.
-*   **Checkpoints:** Model weights saved at every roll-forward fold.
-*   **Logging:** TensorBoard used to log actor/critic loss, entropy, and step-rewards.
-*   **Configuration:** YAML or JSON configs storing all hyperparameters ($W, \eta, \lambda, \gamma, \varepsilon$).
+* **High Turnover / Churn:** Does the agent make frequent or excessively large allocation changes?
+* **Regime Sensitivity:** Does the model perform well in certain market regimes but deteriorate substantially in others?
+* **Reward Instability:** Does the DSR calculation become numerically unstable, leading to NaNs or unstable training?
+* **Seed Sensitivity:** Does performance vary substantially across different random seeds?
 
-## 18. Project Directory Structure
-```text
-BTP1_RL/
-├── data/               # Raw OHLCV data and preprocessing scripts
-├── configs/            # YAML files containing hyperparams for M1, M2, M3, M4
-├── env/                # Gym environment definitions (Base, Cost Logic)
-├── models/             # Custom PPO and LSTM policy extractors
-├── rewards/            # Net Return, DSR, and Regularization functions
-├── training/           # Walk-forward loops and SB3 runners
-├── backtesting/        # Out-of-sample inference scripts
-├── evaluation/         # CR, SR, MDD, Turnover calculators & plotting
-├── experiments/        # Execution scripts (run_m1.py, run_m2.py...)
-├── results/            # Saved checkpoints, Tensorboard logs, CSV metrics
-├── notebooks/          # EDA, feature engineering, and visualization
-└── docs/               # Screenshots, PDFs, and thesis documents
-```
+*Note: The observed failure modes will be used as evidence to motivate and refine the direction of BTP-2.*
 
-## 19. Implementation Roadmap
-Models will be built progressively, validating each step before moving to the next:
-1. Dataset acquisition & cleaning (Handle NaNs, corporate actions).
-2. Feature engineering (MACD, RSI, etc.).
-3. Trading environment build (State representation, Gym API).
-4. Cost model integration (Net Return logic).
-5. **M1**: Implement and validate Flat PPO baseline.
-6. Run M1 baseline backtest to confirm environment mechanics.
-7. **M2**: Integrate LSTM policy network; test temporal convergence.
-8. **M3**: Implement online DSR reward; handle numerical stability ($\varepsilon$).
-9. **M4**: Add additive turnover regularization ($\lambda$).
-10. Execute fully automated walk-forward loops for M1-M4.
-11. Re-run experiments across multiple random seeds.
-12. Generate evaluation tables, equity curves, and turnover diagnostics.
-13. Compile final BTP-1 report and failure analysis.
 
-## 20. Research Log / Experiment Tracking
-*Every experiment run will be logged using this template in the `docs/` folder:*
-*   **Experiment ID:**
-*   **Hypothesis Tested:**
-*   **Model Config:**
-*   **Dataset/Window:**
-*   **Hyperparameters:**
-*   **Seed:**
-*   **Metrics Output (CR/SR/MDD/Turnover):**
-*   **Interpretation:**
-*   **Failure Diagnostics:**
-*   **Next Iteration Trigger:**
+## 17. BTP-2 / MTP Future Direction
+**BTP-2 will be guided by the failure modes identified in BTP-1**. Depending on the observed limitations of the final configuration, possible extensions include regime-aware or adaptive risk-sensitive DRL. More advanced extensions such as multi-agent or self-rewarding approaches will be considered in later MTP stages.
 
-## 21. Literature Citation & Screenshot Protocol
-Every literature-derived mechanism in this codebase is strictly traced to the verified uploads in the project repository.
-*   **[1]** Millea, “Deep Reinforcement Learning for Trading—A Critical Survey,” *Data* 2021, §12.1, p. 21. (Friction Gap).
-*   **[2]** Zou et al., “A Novel Deep Reinforcement Learning Based Automated Stock Trading System...”, *Expert Systems With Applications* 2023, §4.5.1-4.5.2, p. 9. (LSTM Parameters).
-*   **[3]** Millea, “Deep Reinforcement Learning for Trading—A Critical Survey,” *Data* 2021, §5.1.2, p. 8. (DSR Mathematics).
-*   **[4]** Liu et al., “Dynamic datasets and market environments...”, *Machine Learning* 2024, §3.1, p. 10. (Net Return & Base MDP).
-*   **[5]** Liu et al., “Dynamic datasets and market environments...”, *Machine Learning* 2024, §3.3.2, p. 13. (Walk-forward / Rolling window).
-*   **[6]** Huang et al., “A Self-Rewarding Mechanism in Deep Reinforcement Learning...”, *Mathematics* 2024, §4.2, p. 12. (Evaluation Metrics).
-*   **[7]** Wang & Liu, "ART-DRL..." 2025. *⚠ VERIFY ORIGINAL PDF BEFORE DEFENSE — source not available in current project files.*
-
-*(Refer to inline 📸 SCREENSHOT placeholders throughout the README for visual evidence positioning).*
-
-## 22. BTP-2 / MTP Future Direction
-The BTP-2 research direction is intentionally withheld from this implementation and will be dynamically driven by the **Failure Analysis (Section 15)** of the M4 agent. If M4 successfully controls churn but fails to adapt its risk preference during sudden market crashes, BTP-2 will explore **Regime-Aware or Adaptive DRL** (e.g., dynamically modulating the DSR adaptation rate $\eta$ or risk penalty based on macro-market states). Extensions into multi-agent systems or self-rewarding logic will be reserved for MTP stages.
-
-## 23. Final Summary
-This project establishes a completely controlled, empirical reinforcement learning ablation study. It begins with a **PPO baseline**, adds **temporal memory** to capture market states, applies a **risk-aware reward** to penalize drawdown, and finally introduces **friction control** to ensure the policy survives real-world transaction costs. By strictly maintaining identical datasets, constraints, and walk-forward evaluations, the research will isolate the exact mathematical contribution of each mechanism, map the definitive failure modes of the strongest configuration, and lay a mathematically proven foundation for adaptive regime-switching algorithms in BTP-2.
+## 18. Final Summary
+This project proposes a controlled empirical ablation study progressing from PPO to LSTM-PPO, DSR-based reward shaping, and turnover regularization. By maintaining consistent datasets, costs, training conditions, and walk-forward evaluation, the study aims to isolate the incremental contribution of temporal memory, risk-aware reward design, and turnover control. The resulting performance and failure analysis will provide an evidence-based basis for selecting the direction of BTP-2.
