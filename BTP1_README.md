@@ -42,7 +42,7 @@ This translates into three specific, testable hypotheses:
 
 ## 4. Research Gap
 
-> 📸 **[Zou et al. 2023, p. 9, Tables 2 and 3](https://arxiv.org/pdf/2212.02721)**
+>  **[Zou et al. 2023, p. 9, Tables 2 and 3](https://arxiv.org/pdf/2212.02721)**
 
 *A Novel Deep Reinforcement Learning Based Automated Stock Trading System Using Cascaded LSTM Networks*
 
@@ -57,13 +57,13 @@ Although deep reinforcement learning has shown promise for automated stock tradi
 
 
 <div style="display: flex; justify-content: space-between; gap: 10px; align-items: flex-start;">
-  <img src="ss/Zou_etal_pg12.png" alt="Zou_etal_pg12" width="280" height="300" style="flex: 1; max-width: 50%; display: block;">         
-  <img src="ss/Zou_etal_pg13.png" alt="Zou_etal_pg13" width="310" height="200" style="flex: 1; max-width: 49%; display: block;">     
+  <img src="ss/Zou_etal_pg12.png" alt="Zou_etal_pg12" width="280" height="400" style="flex: 1; max-width: 50%; display: block;">         
+  <img src="ss/Zou_etal_pg13.png" alt="Zou_etal_pg13" width="310" height="250" style="flex: 1; max-width: 49%; display: block;">     
 </div>   
 
 ---
 
-> 📸 **[Huang et al. 2024, p. 1 and p. 8](https://www.mdpi.com/2227-7390/12/24/4020)** 
+>  **[Huang et al. 2024, p. 1 and p. 8](https://www.mdpi.com/2227-7390/12/24/4020)** 
 
 *A Self-Rewarding Mechanism in Deep Reinforcement Learning for Trading Strategy Optimization*
 
@@ -88,7 +88,7 @@ Although deep reinforcement learning has shown promise for automated stock tradi
 ---
 
 
-> 📸 **[Millea 2021, p. 21, Section 12.1](https://www.mdpi.com/2306-5729/6/11/119)**
+>  **[Millea 2021, p. 21, Section 12.1](https://www.mdpi.com/2306-5729/6/11/119)**
 
 *Deep Reinforcement Learning for Trading—A Critical Survey*
                 
@@ -105,7 +105,7 @@ Despite increasing interest in deep reinforcement learning for financial trading
 
 ---
 
-> 📸 **[Liu et al. 2024, p. 3, 11, 27](https://link.springer.com/article/10.1007/s10994-023-06511-w)**
+>  **[Liu et al. 2024, p. 3, 11, 27](https://link.springer.com/article/10.1007/s10994-023-06511-w)**
 
 *Dynamic datasets and market environments for financial reinforcement learning*
 
@@ -122,7 +122,7 @@ Despite progress in financial reinforcement learning, existing studies still rel
 
 ----
 
-> 📸 **[Wang & Liu (2025), Page 3 and Page 4, section 2.3](https://www.mdpi.com/1911-8074/18/7/347)** 
+>  **[Wang & Liu (2025), Page 3 and Page 4, section 2.3](https://www.mdpi.com/1911-8074/18/7/347)** 
 
 *Risk-Sensitive Deep Reinforcement Learning for Portfolio Optimization*
 
@@ -230,14 +230,13 @@ To prevent inconsistent gross-vs-net discrepancies and double-counting, the cost
 *   **Mechanism Added:** Temporal memory (LSTM) to handle POMDP nature of financial data.
 *   **Architecture:** Observation window $F_t = [s_{t-W+1}, \dots, s_t]$ is passed through an LSTM. The hidden state $h_t$ and cell state $c_t$ update recursively:
 
-    <!-- $$h_t, c_t = \text{LSTM}_{\text{cell}}(s_t, h_{t-1}, c_{t-1})$$ -->
     $h_t, c_t = LSTM_{cell}(s_t, h_{t-1}, c_{t-1})$
        
 *   **Conditioning:** The policy and value functions are now conditioned on the hidden representation: $\pi_\theta(a_t | h_t)$ and $V_\phi(h_t)$.
 *   **Parameters:** Rather than arbitrary tuning, we strictly adopt the architecture validated by **Zou et al. (2023, §4.5.1 & §4.5.2, p. 9)**: Time Window ($W$) = 30, Hidden Size (HS) = 512.
 *   **Reward:** Direct net return, $r_t = R_{net, t}$.
 
-> 📸 **[Zou et al. 2023](https://arxiv.org/pdf/2212.02721), "A Novel DRL Based Automated Stock Trading System...", p. 9**
+>  **[Zou et al. 2023](https://arxiv.org/pdf/2212.02721), "A Novel DRL Based Automated Stock Trading System...", p. 9**
 
 <div style="display: flex; justify-content: space-between; gap: 10px; align-items: flex-start;">
   <img src="ss/zou_etal_table2.png" alt="zou_etal_table2" width="510" height="180" style="flex: 1; max-width: 50%; display: block;">
@@ -262,7 +261,7 @@ To prevent inconsistent gross-vs-net discrepancies and double-counting, the cost
     **$\varepsilon$:** A small numerical-stability constant (e.g., $10^{-8}$) added to the DSR denominator to prevent instability when the estimated variance approaches zero.
 *   **Reward:** $r_t = D_t$.
 
-> 📸 **[Millea 2021](https://www.mdpi.com/2306-5729/6/11/119), "Deep Reinforcement Learning for Trading—A Critical Survey", p. 8, Section 5.1.2**
+>  **[Millea 2021](https://www.mdpi.com/2306-5729/6/11/119), "Deep Reinforcement Learning for Trading—A Critical Survey", p. 8, Section 5.1.2**
 
 <div style="display: flex; justify-content: space-between; gap: 10px; align-items: flex-start;">
   <img src="ss/Millea2021_DSR1.png" alt="Millea2021_DSR1" width="510" height="150" style="flex: 1; max-width: 50%; display: block;">
@@ -306,7 +305,7 @@ Financial time series are non-stationary, and model performance can depend stron
 4. Roll the entire window forward by $n$ days and repeat.
 
 
-> 📸 **[Liu et al. 2024](https://link.springer.com/article/10.1007/s10994-023-06511-w) "Dynamic datasets and market environments...", p. 13, Figure 5**
+>  **[Liu et al. 2024](https://link.springer.com/article/10.1007/s10994-023-06511-w) "Dynamic datasets and market environments...", p. 13, Figure 5**
 
 <div style="text-align: center; margin-top: 15px;">
   <img src="ss/Liu_et_al_p13.png" alt="Liu_et_al_p13" width="420" height="240" style="display: block; margin: 0 auto;">  
@@ -327,7 +326,7 @@ The final out-of-sample arrays will be concatenated and evaluated using standard
 
 Turnover and transaction cost are particularly important diagnostics for evaluating the effect of M4.
 
-> 📸 **[Huang et al. 2024](https://www.mdpi.com/2227-7390/12/24/4020) "A Self-Rewarding Mechanism...", p. 12, Section 4.2**
+>  **[Huang et al. 2024](https://www.mdpi.com/2227-7390/12/24/4020) "A Self-Rewarding Mechanism...", p. 12, Section 4.2**
 
 <div style="text-align: center; margin-top: 15px;">
   <img src="ss/Huang_et_a_p12_sec4_2.png" alt="Huang_et_a_p12_sec4_2" width="470" height="240" style="display: block; margin: 0 auto;">   

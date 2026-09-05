@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Risk-Aware Deep Reinforcement Learning for Daily Stock Trading</title>
+<meta charset="utf-8">
+
+<!-- MathJax & KaTeX Math Rendering Configuration -->
+<script>
+  MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      processEscapes: true,
+      processEnvironments: true
+    },
+    options: {
+      skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+    }
+  };
+</script>
+<script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        if (typeof renderMathInElement === 'function') {
+            renderMathInElement(document.body, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false},
+                    {left: '\\[', right: '\\]', display: true}
+                ],
+                ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code"],
+                throwOnError: false
+            });
+        }
+    });
+</script>
+
+<style>
+* {
+	box-sizing: border-box;
+}
+
+html {
+	font-size: 100%;
+}
+
+body {
+	font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell',
+		'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+	line-height: 1.6;
+	font-size: 0.6875em; /* 11 pt */
+	color: #111;
+	margin: 0;
+}
+
+body > :first-child {
+	padding-top: 0;
+	margin-top: 0;
+}
+
+body > :last-child {
+	margin-bottom: 0;
+	padding-bottom: 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	margin: 0;
+	padding: 0.5em 0 0.25em;
+}
+
+h5,
+h6 {
+	padding: 0;
+}
+
+h5 {
+	font-size: 1em;
+}
+
+h6 {
+	font-size: 0.875em;
+	text-transform: uppercase;
+}
+
+p {
+	margin: 0.25em 0 1em;
+}
+
+blockquote {
+	margin: 0.5em 0 1em;
+	padding-left: 0.5em;
+	padding-right: 1em;
+	border-left: 4px solid gainsboro;
+	font-style: italic;
+}
+
+ul,
+ol {
+	margin: 0;
+	margin-left: 1em;
+	padding: 0 1.5em 0.5em;
+}
+
+pre {
+	white-space: pre-wrap;
+}
+
+h1 code,
+h2 code,
+h3 code,
+h4 code,
+h5 code,
+h6 code,
+p code,
+li code,
+pre code {
+	background-color: #f8f8f8;
+	padding: 0.1em 0.375em;
+	border: 1px solid #f8f8f8;
+	border-radius: 0.25em;
+	font-family: monospace;
+	font-size: 1.2em;
+}
+
+pre code {
+	display: block;
+	padding: 0.5em;
+}
+
+.page-break {
+	page-break-after: always;
+}
+
+img {
+	max-width: 100%;
+	margin: 1em 0;
+}
+
+table {
+	border-spacing: 0;
+	border-collapse: collapse;
+	display: block;
+	margin: 0 0 1em;
+	width: 100%;
+	overflow: auto;
+}
+
+table th,
+table td {
+	padding: 0.5em 1em;
+	border: 1px solid gainsboro;
+}
+
+table th {
+	font-weight: 600;
+}
+
+table tr {
+	background-color: white;
+	border-top: 1px solid gainsboro;
+}
+
+table tr:nth-child(2n) {
+	background-color: whitesmoke;
+}
+</style>
+<style>
+pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em
+}
+code.hljs {
+  padding: 3px 5px
+}
+.hljs {
+  color: #24292e;
+  background: #ffffff
+}
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  color: #d73a49
+}
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+  color: #6f42c1
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  color: #005cc5
+}
+.hljs-regexp,
+.hljs-string,
+.hljs-meta .hljs-string {
+  color: #032f62
+}
+.hljs-built_in,
+.hljs-symbol {
+  color: #e36209
+}
+.hljs-comment,
+.hljs-code,
+.hljs-formula {
+  color: #6a737d
+}
+.hljs-name,
+.hljs-quote,
+.hljs-selector-tag,
+.hljs-selector-pseudo {
+  color: #22863a
+}
+.hljs-subst {
+  color: #24292e
+}
+.hljs-section {
+  color: #005cc5;
+  font-weight: bold
+}
+.hljs-bullet {
+  color: #735c0f
+}
+.hljs-emphasis {
+  color: #24292e;
+  font-style: italic
+}
+.hljs-strong {
+  color: #24292e;
+  font-weight: bold
+}
+.hljs-addition {
+  color: #22863a;
+  background-color: #f0fff4
+}
+.hljs-deletion {
+  color: #b31d28;
+  background-color: #ffeef0
+}
+</style>
+</head>
+	<body class="">
+		<h1 id="risk-aware-deep-reinforcement-learning-for-daily-stock-trading">Risk-Aware Deep Reinforcement Learning for Daily Stock Trading</h1>
+<h3 id="a-controlled-ablation-of-temporal-memory-reward-shaping-and-turnover-regularization"><em>A Controlled Ablation of Temporal Memory, Reward Shaping, and Turnover Regularization</em></h3>
+<h2 id="1-project-overview">1. Project Overview</h2>
+<p>Financial markets are characterized by low signal-to-noise ratios, high volatility, and non-stationary dynamics. Deep Reinforcement Learning (DRL) is theoretically well-suited for sequential trading decisions because it optimizes for cumulative future rewards rather than immediate prediction accuracy. However, standard DRL algorithms often fail in real-world deployment due to their inability to capture time-series momentum, their blindness to drawdown risk, and their tendency to generate high-turnover policies that succumb to transaction frictions. This BTP-1 project conducts a controlled empirical investigation to systematically evaluate the architectural and reward-design mechanisms required to stabilize a Proximal Policy Optimization (PPO) agent for daily equity trading. </p>
+<hr>
+<h2 id="2-literatures">2. Literatures</h2>
+<ul>
+<li><p><strong>Zou et al. (2023)</strong> <a href="https://arxiv.org/pdf/2212.02721">link</a></p>
+<ul>
+<li>Full Title: A Novel Deep Reinforcement Learning Based Automated Stock Trading System Using Cascaded LSTM Networks</li>
+<li>Authors: Jie Zou, Jiashu Lou, Baohua Wang, Sixue Liu</li>
+<li>Journal: Expert Systems With Applications</li>
+</ul>
+</li>
+<li><p><strong>Huang et al. (2024)</strong> <a href="https://www.mdpi.com/2227-7390/12/24/4020">link</a></p>
+<ul>
+<li>Full Title: A Self-Rewarding Mechanism in Deep Reinforcement Learning for Trading Strategy Optimization</li>
+<li>Authors: Yuling Huang, Chujin Zhou, Lin Zhang, Xiaoping Lu</li>
+<li>Journal: Mathematics</li>
+</ul>
+</li>
+<li><p><strong>Liu et al. / FinRL-Meta (2024)</strong> <a href="https://link.springer.com/article/10.1007/s10994-023-06511-w">link</a></p>
+<ul>
+<li>Full Title: Dynamic datasets and market environments for financial reinforcement learning</li>
+<li>Authors: Xiao-Yang Liu, Ziyi Xia, Hongyang Yang, Jiechao Gao, Daochen Zha, Ming Zhu, Christina Dan Wang, Zhaoran Wang, Jian Guo</li>
+<li>Journal: Machine Learning</li>
+</ul>
+</li>
+<li><p><strong>Millea (2021)</strong> <a href="https://www.mdpi.com/2306-5729/6/11/119">link</a></p>
+<ul>
+<li>Full Title: Deep Reinforcement Learning for Trading—A Critical Survey </li>
+<li>Author: Adrian Millea</li>
+<li>Journal: Data</li>
+</ul>
+</li>
+<li><p><strong>Wang &amp; Liu (2025)</strong> <a href="https://www.mdpi.com/1911-8074/18/7/347">link</a></p>
+<ul>
+<li>Full Title: ART-DRL: Adaptive Risk-Sensitive Deep Reinforcement Learning</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="3-research-question">3. Research Question</h2>
+<p><strong>Main Research Question:</strong> How do temporal memory, dense risk-adjusted reward shaping, and turnover regularization independently and cumulatively affect the risk-adjusted out-of-sample performance of a <strong>PPO-based</strong> daily trading agent?</p>
+<p>This translates into three specific, testable hypotheses:</p>
+<ul>
+<li><strong>H1:</strong> LSTM-based temporal memory improves out-of-sample trading robustness over a flat (memoryless) PPO baseline by capturing partial observability (POMDP).</li>
+<li><strong>H2:</strong> Replacing raw-return rewards with a <strong>Differential Sharpe Ratio (DSR)</strong> reward improves the agent’s <strong>risk-adjusted</strong> performance <strong>(higher Sharpe/Sortino, lower Max Drawdown)</strong> compared to purely profit-driven rewards.</li>
+<li><strong>H3:</strong> Adding explicit turnover regularization reduces excessive trading (churn) and transaction costs while maintaining or improving the risk-adjusted performance of the DSR-guided agent.</li>
+</ul>
+<h2 id="4-research-gap">4. Research Gap</h2>
+<blockquote>
+<p> <strong><a href="https://arxiv.org/pdf/2212.02721">Zou et al. 2023, p. 9, Tables 2 and 3</a></strong></p>
+</blockquote>
+<p><em>A Novel Deep Reinforcement Learning Based Automated Stock Trading System Using Cascaded LSTM Networks</em></p>
+<p>Although deep reinforcement learning has shown promise for automated stock trading, existing approaches remain constrained by the noisy, unstable, and highly dynamic nature of financial market data. Prior machine learning models are also prone to overfitting, which reduces their generalization ability in real trading environments. In addition, reinforcement learning methods originally developed for gaming are not directly adaptable to financial data with low signal-to-noise ratios and uneven market behavior, which leads to performance limitations. Even in the proposed cascaded LSTM-PPO framework, further improvement still depends on unresolved issues such as the need for larger training datasets and more effective reward functions to improve stability and control pullback risk. Therefore, a clear research gap remains in developing more robust deep reinforcement learning trading systems that can better handle noisy financial data, generalize reliably, and achieve improved risk-adjusted performance </p>
+<div style="text-align: center; margin-top: 15px;">
+  <img src="ss/Zou_etal_pg1.png" alt="Zou_etal_pg1" width="620" height="300" style="display: block; margin: 5 auto;">
+</div> 
+
+<div style="display: flex; justify-content: space-between; gap: 10px; align-items: flex-start;">
+  <img src="ss/Zou_etal_pg12.png" alt="Zou_etal_pg12" width="280" height="400" style="flex: 1; max-width: 50%; display: block;">         
+  <img src="ss/Zou_etal_pg13.png" alt="Zou_etal_pg13" width="310" height="250" style="flex: 1; max-width: 49%; display: block;">     
+</div>   
+
+<hr>
+<blockquote>
+<p> <strong><a href="https://www.mdpi.com/2227-7390/12/24/4020">Huang et al. 2024, p. 1 and p. 8</a></strong> </p>
+</blockquote>
+<p><em>A Self-Rewarding Mechanism in Deep Reinforcement Learning for Trading Strategy Optimization</em></p>
+<p><strong>Huang et al. (2024)</strong> investigate adaptive/self-rewarding mechanisms, showing that reward design can substantially affect trading performance and mitigate risk.</p>
+<ul>
+<li><p>Existing DRL trading systems mostly use static, manually designed reward functions, which do not adapt well to unstable and changing financial markets </p>
+</li>
+<li><p>The unresolved problem is how to build a <strong>dynamic reward mechanism</strong> that can adjust during learning and remain responsive to market changes </p>
+</li>
+<li><p>This paper addresses that gap by proposing a self-rewarding RL framework that combines expert labels with learned reward prediction</p>
+</li>
+</ul>
+<div style="display: flex; justify-content: space-between; gap: 20px; align-items: flex-start;">
+  <img src="ss/Huang_pg8.png" alt="Huang et al pg8" width="480" height="200" style="flex: 1; max-width: 48%; display: block;">         
+  <img src="ss/Huang_page1.png" alt="Huang et al page1" width="480" height="200" style="flex: 1; max-width: 49%; display: block;">     
+</div> 
+
+<div style="text-align: center; margin-top: 15px;">
+  <img src="ss/Huang_pg8_diagram.png" alt="Huang et al pg8 diagram" width="600" height="250" style="display: block; margin: 0 auto;">
+</div>   
+
+<hr>
+<blockquote>
+<p> <strong><a href="https://www.mdpi.com/2306-5729/6/11/119">Millea 2021, p. 21, Section 12.1</a></strong></p>
+</blockquote>
+<p><em>Deep Reinforcement Learning for Trading—A Critical Survey</em></p>
+<p>Despite increasing interest in deep reinforcement learning for financial trading, the literature remains methodologically inconsistent and difficult to compare across studies. Existing works frequently use different datasets, different time periods, and different preprocessing techniques, which makes it difficult to determine whether reported performance differences are caused by the learning algorithm itself or by variation in the input data. In addition, only a limited number of studies examine model performance across multiple market types, leaving the generalizability of DRL-based trading systems insufficiently understood. Reproducibility is further weakened by the limited availability of source code and the incomplete reporting of implementation details such as hyperparameters and network architecture. Therefore, an important research gap remains in developing more standardized, comparable, and reproducible evaluation practices for DRL-based trading research</p>
+<div style="text-align: center; margin-top: 15px;">
+  <img src="ss/Millea2021_research_gap.png" alt="Millea2021_research_gap" width="300" height="250" style="display: block; margin: 0 auto;">
+</div>   
+
+<div style="text-align: center; margin-top: 15px;">
+  <img src="ss/Millea2021_sec12_2_pg21.png" alt="Millea2021_sec12_2_pg21" width="350" height="230" style="display: block; margin: 0 auto;">
+</div>  
+
+<hr>
+<blockquote>
+<p> <strong><a href="https://link.springer.com/article/10.1007/s10994-023-06511-w">Liu et al. 2024, p. 3, 11, 27</a></strong></p>
+</blockquote>
+<p><em>Dynamic datasets and market environments for financial reinforcement learning</em></p>
+<p>Despite progress in financial reinforcement learning, existing studies still rely heavily on historical backtesting environments that may not represent real market conditions adequately. This creates a <strong>simulation-to-reality</strong> gap, where strong backtest results do not necessarily translate into robust live trading performance. The literature identifies several unresolved data-centric challenges, including <strong>survivorship bias, low signal-to-noise ratio</strong>, and <strong>model overfitting</strong>, which continue to limit the reliability and real-world deployment of FinRL agents  </p>
+<div style="display: flex; justify-content: space-between; gap: 20px; align-items: flex-start;">
+  <img src="ss/Liu_et_al_challenges_pg3.png" alt="Lie et al pg3" width="480" height="280" style="flex: 1; max-width: 48%; display: block;">
+  <img src="ss/Liu_et_al_intro_pg11.png" alt="Lie et al pg11" width="480" height="280" style="flex: 1; max-width: 49%; display: block;">
+</div>  
+
+<div style="text-align: center; margin-top: 15px;">
+  <img src="ss/Liu_et_al_pg27.png" alt="Liu et al Traidng in real market" width="570" height="260" style="display: block; margin: 0 auto;">
+</div>
+
+<hr>
+<blockquote>
+<p> <strong><a href="https://www.mdpi.com/1911-8074/18/7/347">Wang &amp; Liu (2025), Page 3 and Page 4, section 2.3</a></strong> </p>
+</blockquote>
+<p><em>Risk-Sensitive Deep Reinforcement Learning for Portfolio Optimization</em></p>
+<ul>
+<li>Finally, <strong>Wang &amp; Liu (2025)</strong> demonstrate the benefits of adaptive risk-sensitive policies under changing market conditions. They highlight that prior deep reinforcement learning research has focused predominantly on <strong>equities and forex</strong>, leaving commodity futures underexplored. Specifically, previous commodity-based DRL studies were limited in <strong>adaptive agent-switching mechanisms or lacked portfolio-level optimization</strong>, failing to fully address the distinctive structural volatility and supply-shock complexity of petroleum futures. </li>
+<li>The paper also identifies a second, more practical gap: even its own proposed framework does not yet explicitly model roll mechanics, expiration effects, or liquidity constraints, which limits real-world deployment.</li>
+</ul>
+<div style="text-align: center; margin-top: 15px;">
+  <img src="ss/Wang_Liu2025_1.png" alt="Wang_Liu2025_1" width="520" height="210" style="display: block; margin: 0 auto;">
+</div>          
+              
+<div style="text-align: center; margin-top: 15px;">
+  <img src="ss/Wang_Liu2025_2.png" alt="Wang_Liu2025_2" width="520" height="210" style="display: block; margin: 0 auto;">  
+</div>          
+
+<hr>
+<h3 id="combined-research-gap">Combined Research Gap</h3>
+<p>Taken together, the reviewed studies address important but largely <strong>separate aspects</strong> of DRL-based financial trading:</p>
+<ul>
+<li><p><strong>Zou et al. (2023)</strong> demonstrate the benefit of <strong>LSTM-based temporal memory</strong> for PPO trading by using historical sequences to capture temporal information. However, their framework mainly relies on <strong>return-based rewards</strong>, which do not directly account for risk measures such as variance or drawdown. </p>
+</li>
+<li><p><strong>Huang et al. (2024)</strong> address the limitation of <strong>static reward functions</strong> by introducing a self-rewarding mechanism that combines expert labels with learned reward prediction. This shows the importance of reward design, but the approach <strong>replaces the reward mechanism</strong> rather than isolating the effect of a mathematically defined risk-adjusted reward such as the Differential Sharpe Ratio (DSR).</p>
+</li>
+<li><p><strong>Millea (2021)</strong> highlights the problem of <strong>inconsistent experimental settings</strong> in DRL trading research, where studies often use different datasets, time periods, preprocessing methods, friction assumptions, and evaluation procedures. This makes it difficult to determine whether performance improvements come from the algorithm or from differences in the experimental setup.</p>
+</li>
+<li><p><strong>Liu et al. (2024)</strong> address the need for more realistic and reproducible financial RL experiments through <strong>dynamic datasets, realistic market environments, and rolling training-testing-trading evaluation</strong>. However, their main contribution is focused on the <strong>environment and evaluation pipeline</strong>, rather than isolating the contribution of advanced risk-aware reward mechanisms.</p>
+</li>
+<li><p><strong>Wang &amp; Liu (2025)</strong> demonstrate <strong>adaptive risk-sensitive decision-making</strong> under changing market conditions. However, their framework does not separately isolate the contributions of <strong>temporal memory, reward shaping, and turnover control</strong> within a single controlled ablation.</p>
+</li>
+</ul>
+<h3 id="overall-gap">Overall Gap</h3>
+<p>These studies therefore motivate three important directions:</p>
+<p><strong>(1) temporal memory, (2) risk-aware reward design, and (3) turnover regularization.</strong></p>
+<p>However, <strong>among the studies reviewed for this project, we did not find a controlled experimental framework that isolates these mechanisms incrementally within the same PPO trading environment</strong>. In particular, their separate contributions are not systematically decomposed under <strong>identical data, cost assumptions, training conditions, and evaluation metrics</strong>.</p>
+<p>Therefore, this BTP-1 proposes a controlled four-stage ablation:</p>
+<div align="center" style="margin: 12px 0;">
+  <div style="display: inline-block; padding: 14px 18px; border: 1px solid #d0d7de; border-radius: 8px; background-color: #0d1117; color: #f0f6fc; font-weight: 600; font-size: 1.05em;">  
+    PPO → LSTM-PPO → LSTM-PPO + DSR → LSTM-PPO + DSR + Turnover
+  </div>
+</div>
+
+<p>to empirically quantify the incremental effect of each mechanism on <strong>return, risk-adjusted performance, drawdown, turnover, and cost-adjusted trading stability</strong>.</p>
+<h2 id="5-literature-review">5. Literature Review</h2>
+<table>
+<thead>
+<tr>
+<th align="left">Paper</th>
+<th align="left">Main Idea</th>
+<th align="left">Dataset/Market</th>
+<th align="left">State</th>
+<th align="left">Action</th>
+<th align="left">Reward</th>
+<th align="left">Key Finding</th>
+<th align="left">Limitation Relevant to BTP-1</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>Millea (2021)</strong></td>
+<td align="left">Survey of DRL in trading &amp; market mechanics.</td>
+<td align="left">Crypto / Stocks / FX</td>
+<td align="left">Various (OHLCV, LOB)</td>
+<td align="left">Discrete &amp; Cont.</td>
+<td align="left">Sharpe, PnL, Sortino</td>
+<td align="left">Identifies major inconsistencies in data, friction, and evaluation.</td>
+<td align="left">Meta-analysis; highlights the need for strict ablation &amp; friction-control.</td>
+</tr>
+<tr>
+<td align="left"><strong>Zou et al. (2023)</strong></td>
+<td align="left">Cascaded LSTM-PPO for automated trading.</td>
+<td align="left">US, CN, IN, UK Stocks</td>
+<td align="left">181-dim (Prices, MACD, RSI, etc.)</td>
+<td align="left">Discrete (Shares)</td>
+<td align="left">Net Return</td>
+<td align="left">LSTM feature extractor outperforms ensemble &amp; flat methods (TW=30, HS=512).</td>
+<td align="left">Relies on absolute profit reward; blind to variance/drawdown risk.</td>
+</tr>
+<tr>
+<td align="left"><strong>Liu et al. (2024)</strong></td>
+<td align="left">DataOps pipeline and dynamic walk-forward environments.</td>
+<td align="left">Dow 30, S&amp;P 500, Crypto</td>
+<td align="left">Balances, Prices, Tech Indicators</td>
+<td align="left">Continuous (Weights)</td>
+<td align="left">Asset value change</td>
+<td align="left">RLOps standardizes environments, reducing simulation-to-reality gap.</td>
+<td align="left">Standard baselines lack advanced online risk-aware reward functions.</td>
+</tr>
+<tr>
+<td align="left"><strong>Huang et al. (2024)</strong></td>
+<td align="left">Self-rewarding mechanism blending expert labels.</td>
+<td align="left">DJI, IXIC, SP500, HSI</td>
+<td align="left">OHLCV</td>
+<td align="left">Discrete</td>
+<td align="left">Sharpe, Min-Max</td>
+<td align="left">Self-rewarding significantly beats fixed formulaic rewards.</td>
+<td align="left">Replaces rather than regularizes reward; relies on predefined expert labels.</td>
+</tr>
+<tr>
+<td align="left"><strong>Wang &amp; Liu (2025)</strong></td>
+<td align="left">ART-DRL: Adaptive risk-sensitive DRL.</td>
+<td align="left">Equities</td>
+<td align="left">Market/Tech Features</td>
+<td align="left">Continuous</td>
+<td align="left">Adaptive Risk</td>
+<td align="left">Dynamically shifts risk sensitivity based on market regime.</td>
+<td align="left">Focuses on adaptive risk sensitivity but does not isolate the independent contribution of temporal memory versus reward shaping in a controlled ablation.</td>
+</tr>
+</tbody></table>
+<h2 id="6-common-trading-environment">6. Common Trading Environment</h2>
+<p>To ensure strict comparability, all four models will be trained and evaluated in the exact same simulated environment:</p>
+<ul>
+<li><strong>Data:</strong> Daily OHLCV data for a defined universe of equities.</li>
+<li><strong>Transaction Costs:</strong> Fixed proportional commission fee.</li>
+<li><strong>Slippage Assumptions:</strong> Fixed slippage penalty applied per trade volume to simulate execution friction.</li>
+<li><strong>Daily Rebalancing:</strong> The agent acts once at the end of the daily close to adjust target holdings.</li>
+<li><strong>Evaluation:</strong> Dynamic walk-forward evaluation to prevent look-ahead bias and test temporal generalization.</li>
+</ul>
+<p><strong>MDP / POMDP Formulation:</strong>
+Because financial markets are heavily influenced by unobservable latent factors, a standard MDP $(\mathcal{S}, \mathcal{A}, \mathcal{P}, \mathcal{R}, \gamma)$ is insufficient. The temporal information motivates a Partially Observable MDP (POMDP), formulated as $(\mathcal{O}, \mathcal{A}, \mathcal{P}, \mathcal{R}, \gamma)$, where the agent receives observations $o_t \in \mathcal{O}$ and utilizes an RNN (LSTM) to maintain a hidden belief state $h_t$ approximating the true market state.</p>
+<h2 id="7-state-representation">7. State Representation</h2>
+<p>The observation vector $o_t$ provided to the agent strictly contains data available at decision time $t$ (no look-ahead bias). It is divided into:</p>
+<ol>
+<li><strong>Market Features:</strong> Adjusted close prices and volumes (normalized).</li>
+<li><strong>Technical Indicators:</strong> MACD, RSI, CCI, ADX.</li>
+<li><strong>Portfolio/Account Variables:</strong> Current cash balance, current holdings (shares/weights), and total portfolio value.</li>
+</ol>
+<h2 id="8-action-space">8. Action Space</h2>
+<p>The action space $\mathcal{A}$ is a continuous vector $a_t \in [-1, 1]^N$ corresponding to the $N$ assets in the portfolio. </p>
+<ul>
+<li><strong>Definition:</strong> Each scalar $a_{t,i}$ represents the target portfolio weight for asset $i$. </li>
+<li><strong>Constraint:</strong> A Softmax or Dirichlet mapping will be applied post-network output to ensure $\sum_{i=1}^N w_{t,i} = 1$ and $w_{t,i} \ge 0$ (assuming a long-only constraint for equity basics).</li>
+</ul>
+<h2 id="9-portfolio-dynamics-and-cost-model">9. Portfolio Dynamics and Cost Model</h2>
+<p>To prevent inconsistent gross-vs-net discrepancies and double-counting, the cost model is defined exactly once and applies to all four models.</p>
+<ul>
+<li><strong>Total Portfolio Value ($V_t$):</strong> $V_t = b_t + \sum_{i=1}^N h_{t,i} p_{t,i}$</li>
+<li><strong>Transaction Cost ($C_t$):</strong> Computed based on the change in weights: $C_t = c_{\text{trans}} \sum_{i=1}^N |w_{t,i} - w_{t-1,i}| \times V_t$</li>
+<li><strong>Net Daily Return ($R_{\text{net}, t}$):</strong> The true accounting return after all frictions:
+$$R_{\text{net}, t} = \frac{V_t - V_{t-1}}{V_{t-1}} - \frac{C_t}{V_{t-1}}$$</li>
+<li><strong>Important:</strong> $R_{\text{net}, t}$ represents the literal, measurable portfolio growth. It is the core input for all model reward functions.</li>
+</ul>
+<h2 id="10-four-model-ablation-detailed-mathematical-modelling">10. Four-Model Ablation: Detailed Mathematical Modelling</h2>
+<h3 id="m1--ppo-baseline">M1 — PPO Baseline</h3>
+<ul>
+<li><p><strong>Architecture:</strong> Memoryless feed-forward Multi-Layer Perceptron (MLP) for both the actor $\pi_\theta(a_t|s_t)$ and critic $V_\phi(s_t)$ networks.</p>
+</li>
+<li><p><strong>State Input:</strong> Only the current step observation $s_t$.</p>
+</li>
+<li><p><strong>Reward:</strong> Direct net return, $r_t = R_{\text{net}, t}$ <strong>(Liu et al. 2024, §3.1, p. 10)</strong>.</p>
+</li>
+<li><p><strong>Objective:</strong> Standard Generalized Advantage Estimation (GAE) where $\hat{A}_t = \delta_t + (\gamma\lambda)\delta_{t+1} + \dots$ and $\delta_t = r_t + \gamma V_\phi(s_{t+1}) - V_\phi(s_t)$. The actor is updated using the clipped surrogate objective:</p>
+<p>$$L^{\text{CLIP}}(\theta) = \hat{\mathbb{E}}_t \left[ \min\left( \rho_t(\theta)\hat{A}_t, \text{clip}\left(\rho_t(\theta), 1-\epsilon, 1+\epsilon\right)\hat{A}_t \right) \right]$$</p>
+</li>
+</ul>
+<h3 id="m2--lstm-ppo--temporal-memory">M2 — LSTM-PPO (+ Temporal Memory)</h3>
+<ul>
+<li><p><strong>Mechanism Added:</strong> Temporal memory (LSTM) to handle POMDP nature of financial data.</p>
+</li>
+<li><p><strong>Architecture:</strong> Observation window $F_t = [s_{t-W+1}, \dots, s_t]$ is passed through an LSTM. The hidden state $h_t$ and cell state $c_t$ update recursively:</p>
+<p>$$h_t, c_t = \text{LSTM}_{\text{cell}}(s_t, h_{t-1}, c_{t-1})$$</p>
+</li>
+<li><p><strong>Conditioning:</strong> The policy and value functions are now conditioned on the hidden representation: $\pi_\theta(a_t | h_t)$ and $V_\phi(h_t)$.</p>
+</li>
+<li><p><strong>Parameters:</strong> Rather than arbitrary tuning, we strictly adopt the architecture validated by <strong>Zou et al. (2023, §4.5.1 &amp; §4.5.2, p. 9)</strong>: Time Window ($W$) = 30, Hidden Size (HS) = 512.</p>
+</li>
+<li><p><strong>Reward:</strong> Direct net return, $r_t = R_{\text{net}, t}$.</p>
+</li>
+</ul>
+<blockquote>
+<p> <strong><a href="https://arxiv.org/pdf/2212.02721">Zou et al. 2023</a>, "A Novel DRL Based Automated Stock Trading System...", p. 9</strong></p>
+</blockquote>
+<div style="display: flex; justify-content: space-between; gap: 10px; align-items: flex-start;">
+  <img src="ss/zou_etal_table2.png" alt="zou_etal_table2" width="510" height="180" style="flex: 1; max-width: 50%; display: block;">
+  <img src="ss/zou_etal_table3.png" alt="zou_etal_table3" width="510" height="180" style="flex: 1; max-width: 50%; display: block;">
+</div>    
+
+<blockquote>
+<ul>
+<li><strong>Purpose:</strong> Justifies the direct adoption of the LSTM baseline variables without needing to re-tune from scratch.</li>
+</ul>
+</blockquote>
+<h3 id="m3--lstm-ppo--dsr">M3 — LSTM-PPO + DSR</h3>
+<ul>
+<li><p><strong>Mechanism Added:</strong> Dense, risk-aware online reward. Standard profit rewards (M1 &amp; M2) are blind to variance and drawdown risk. </p>
+</li>
+<li><p><strong>Formulation:</strong> Standard Sharpe requires a full episode to compute, causing sparse delayed rewards. Following <strong>Millea (2021, §5.1.2, p. 8, Eq. 6 &amp; 7)</strong>, we use exponential moving estimates for the first moment ($A_t$) and second moment ($B_t$) of the net returns $R_{\text{net}, t}$:</p>
+<p>$$A_t = A_{t-1} + \eta (R_{\text{net}, t} - A_{t-1})$$</p>
+<p>$$B_t = B_{t-1} + \eta (R_{\text{net}, t}^2 - B_{t-1})$$</p>
+<p>Expanding the Sharpe ratio via a Taylor series yields the online DSR step-reward:</p>
+<p>$$D_t = \frac{B_{t-1}\Delta A_t - \frac{1}{2}A_{t-1}\Delta B_t}{(B_{t-1} - A_{t-1}^2 + \varepsilon)^{3/2}}$$</p>
+</li>
+<li><p><strong>Parameters:</strong> $\eta \in (0,1]$ is the DSR moving-average adaptation rate, strictly distinct from the PPO discount factor $\gamma$. 
+<strong>$\varepsilon$:</strong> A small numerical-stability constant (e.g., $10^{-8}$) added to the DSR denominator to prevent instability when the estimated variance approaches zero.</p>
+</li>
+<li><p><strong>Reward:</strong> $r_t = D_t$.</p>
+</li>
+</ul>
+<blockquote>
+<p> <strong><a href="https://www.mdpi.com/2306-5729/6/11/119">Millea 2021</a>, "Deep Reinforcement Learning for Trading—A Critical Survey", p. 8, Section 5.1.2</strong></p>
+</blockquote>
+<div style="display: flex; justify-content: space-between; gap: 10px; align-items: flex-start;">
+  <img src="ss/Millea2021_DSR1.png" alt="Millea2021_DSR1" width="510" height="150" style="flex: 1; max-width: 50%; display: block;">
+  <img src="ss/Millea2021_DSR2.png" alt="Millea2021_DSR2" width="510" height="110" style="flex: 1; max-width: 49%; display: block;">
+</div>    
+               
+<blockquote>
+<ul>
+<li><strong>Purpose:</strong> Establishes the exact mathematical foundation for the M3 risk-aware reward mechanism.</li>
+</ul>
+</blockquote>
+<h3 id="m4--lstm-ppo--dsr--turnover-regularization">M4 — LSTM-PPO + DSR + Turnover Regularization</h3>
+<ul>
+<li><p><strong>Mechanism Added:</strong> Action-friction control to regularize churn.</p>
+</li>
+<li><p><strong>Formulation:</strong> DSR mathematically incentivizes the agent to capture tiny, high-Sharpe anomalies, leading to high-frequency action oscillation ("churn"). In live markets, slippage destroys these theoretical returns. To strictly isolate friction-control from risk-sensitivity (M3 → M4 comparison), the turnover penalty must be additive. </p>
+<p>$$r_t = D_t - \lambda_{\text{turnover}} \cdot \sum_{i=1}^N (a_{t,i} - a_{t-1,i})^2$$</p>
+</li>
+<li><p><strong>Note:</strong> This penalty $\lambda_{\text{turnover}}$ only punishes the RL <em>reward signal</em> to discourage churning. The actual portfolio simulation already accounts for true transaction costs in $R_{\text{net}, t}$. Comparing M3 to M4 will explicitly test the hypothesis that regularizing action outputs stabilizes the LSTM memory mechanism.</p>
+</li>
+</ul>
+<h2 id="11-controlled-experimental-design">11. Controlled Experimental Design</h2>
+<p>To isolate the incremental contribution of each mechanism, all models will be evaluated under the same experimental conditions:</p>
+<ul>
+<li>Identical daily datasets and feature sets.</li>
+<li>Identical walk-forward folds, so every model is exposed to the same market periods and regimes.</li>
+<li>Identical transaction-cost and slippage assumptions.</li>
+<li>Identical evaluation metrics and evaluation protocol.</li>
+<li>Comparable training budgets and multiple fixed random seeds across Python, NumPy, PyTorch, and the RL environment.</li>
+</ul>
+<p><strong>Ablation Logic:</strong></p>
+<ul>
+<li><code>M1 → M2</code> is intended to isolate the contribution of <strong>temporal memory</strong>.</li>
+<li><code>M2 → M3</code> is intended to isolate the contribution of <strong>DSR-based risk-aware reward shaping</strong>.</li>
+<li><code>M3 → M4</code> is intended to isolate the contribution of <strong>turnover regularization</strong>.</li>
+</ul>
+<h2 id="12-walk-forward-backtesting">12. Walk-Forward Backtesting</h2>
+<p>Financial time series are non-stationary, and model performance can depend strongly on the market period used for training and testing. A single static train/test split provides only one out-of-sample period and may not adequately evaluate robustness across changing market conditions. Therefore, we will use a strict walk-forward evaluation methodology:</p>
+<ol>
+<li>Train on window $T_0 \rightarrow T_k$.</li>
+<li>Validate, if required for hyperparameter selection, on $T_k \rightarrow T_{k+m}$.</li>
+<li>Test out-of-sample on $T_{k+m} \rightarrow T_{k+m+n}$.</li>
+<li>Roll the entire window forward by $n$ days and repeat.</li>
+</ol>
+<blockquote>
+<p> <strong><a href="https://link.springer.com/article/10.1007/s10994-023-06511-w">Liu et al. 2024</a> "Dynamic datasets and market environments...", p. 13, Figure 5</strong></p>
+</blockquote>
+<div style="text-align: center; margin-top: 15px;">
+  <img src="ss/Liu_et_al_p13.png" alt="Liu_et_al_p13" width="420" height="240" style="display: block; margin: 0 auto;">  
+</div> 
+     
+<blockquote>
+<ul>
+<li><strong>Purpose:</strong> Provides literature grounding for the strict walk-forward methodology preventing look-ahead bias.</li>
+</ul>
+</blockquote>
+<h2 id="13-evaluation-metrics">13. Evaluation Metrics</h2>
+<p>The final out-of-sample arrays will be concatenated and evaluated using standard quantitative finance metrics to properly assess H2 and H3:</p>
+<ul>
+<li><p><strong>Cumulative Return (CR):</strong> $$CR = \frac{P_{\text{end}} - P_0}{P_0}$$</p>
+</li>
+<li><p><strong>Annualized Return (AR)</strong></p>
+</li>
+<li><p><strong>Sharpe Ratio (SR):</strong> $$SR = \frac{\mathbb{E}[R_P] - R_f}{\sigma_P}$$</p>
+</li>
+<li><p><strong>Sortino Ratio</strong></p>
+</li>
+<li><p><strong>Maximum Drawdown (MDD):</strong> $$MDD = \max_t\left(\frac{Peak_t - V_t}{Peak_t}\right)$$</p>
+</li>
+<li><p><strong>Annualized Volatility</strong></p>
+</li>
+<li><p><strong>Cumulative Transaction Cost</strong></p>
+</li>
+</ul>
+<p>Turnover and transaction cost are particularly important diagnostics for evaluating the effect of M4.</p>
+<blockquote>
+<p> <strong><a href="https://www.mdpi.com/2227-7390/12/24/4020">Huang et al. 2024</a> "A Self-Rewarding Mechanism...", p. 12, Section 4.2</strong></p>
+</blockquote>
+<div style="text-align: center; margin-top: 15px;">
+  <img src="ss/Huang_et_a_p12_sec4_2.png" alt="Huang_et_a_p12_sec4_2" width="470" height="240" style="display: block; margin: 0 auto;">   
+</div> 
+
+<blockquote>
+<ul>
+<li><strong>Purpose:</strong> Academic justification of the standard financial evaluation metrics.</li>
+</ul>
+</blockquote>
+<h2 id="14-experimental-matrix">14. Experimental Matrix</h2>
+<h3 id="controlled-ablation-summary">Controlled Ablation Summary</h3>
+<table>
+<thead>
+<tr>
+<th align="left">Model</th>
+<th align="left">Architecture</th>
+<th align="left">Reward</th>
+<th align="left">Memory</th>
+<th align="left">Turnover Regularization</th>
+<th align="left">Main Question</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>M1</strong></td>
+<td align="left">PPO (MLP)</td>
+<td align="left">Net Return</td>
+<td align="left">None</td>
+<td align="left">None</td>
+<td align="left">Baseline performance without memory, risk shaping, or action regularization</td>
+</tr>
+<tr>
+<td align="left"><strong>M2</strong></td>
+<td align="left">LSTM-PPO</td>
+<td align="left">Net Return</td>
+<td align="left">LSTM with window $W$ selected during validation</td>
+<td align="left">None</td>
+<td align="left">Does temporal memory improve robustness and adaptability?</td>
+</tr>
+<tr>
+<td align="left"><strong>M3</strong></td>
+<td align="left">LSTM-PPO</td>
+<td align="left">DSR</td>
+<td align="left">LSTM</td>
+<td align="left">None</td>
+<td align="left">Does risk-aware reward shaping improve risk-adjusted performance?</td>
+</tr>
+<tr>
+<td align="left"><strong>M4</strong></td>
+<td align="left">LSTM-PPO</td>
+<td align="left">DSR</td>
+<td align="left">LSTM</td>
+<td align="left">$\lambda_{\text{turn}}\sum_i(a_{t,i}-a_{t-1,i})^2$</td>
+<td align="left">Does turnover regularization reduce churn and trading costs while preserving performance?</td>
+</tr>
+</tbody></table>
+<p><strong>Execution Table:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Dataset</th>
+<th>Train/Test Windows</th>
+<th>Roll Window</th>
+<th>Transaction Cost</th>
+<th>Seeds</th>
+<th>Metrics</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>[TODO]</td>
+<td>[TODO]</td>
+<td>[TODO]</td>
+<td>[TODO / literature-supported]</td>
+<td>Multiple fixed seeds (e.g. 42, 100, 999 ~ <em>tentative</em>)</td>
+<td>CR, AR, SR, Sortino, MDD, Volatility, Turnover, Cost</td>
+</tr>
+</tbody></table>
+<h2 id="15-expected-analysis">15. Expected Analysis</h2>
+<p>The goal of this analysis is not simply "highest return wins."</p>
+<ul>
+<li><strong>H1:</strong> If supported, M2 should demonstrate improved robustness across out-of-sample folds compared with M1, potentially with changes in volatility and drawdown.</li>
+<li><strong>H2:</strong> If supported, M3 should demonstrate improved risk-adjusted performance over M2, such as a higher Sharpe/Sortino Ratio and/or lower Maximum Drawdown, even if its Cumulative Return is not higher.</li>
+<li><strong>H3:</strong> If supported, M4 should exhibit lower <strong>Average Turnover</strong> and <strong>Cumulative Transaction Costs</strong> than M3 while maintaining or improving risk-adjusted out-of-sample performance.</li>
+<li>Fold-by-fold performance will be analyzed to assess whether the models remain robust during high-volatility and adverse market periods.</li>
+</ul>
+<h2 id="16-failure-analysis">16. Failure Analysis</h2>
+<p>We will proactively investigate and report failure modes. If a model performs poorly or becomes unstable, the analysis will examine:</p>
+<ul>
+<li><strong>High Turnover / Churn:</strong> Does the agent make frequent or excessively large allocation changes?</li>
+<li><strong>Regime Sensitivity:</strong> Does the model perform well in certain market regimes but deteriorate substantially in others?</li>
+<li><strong>Reward Instability:</strong> Does the DSR calculation become numerically unstable, leading to NaNs or unstable training?</li>
+<li><strong>Seed Sensitivity:</strong> Does performance vary substantially across different random seeds?</li>
+</ul>
+<p><em>Note: The observed failure modes will be used as evidence to motivate and refine the direction of BTP-2.</em></p>
+<h2 id="17-btp-2--mtp-future-direction">17. BTP-2 / MTP Future Direction</h2>
+<p><strong>BTP-2 will be guided by the failure modes identified in BTP-1</strong>. Depending on the observed limitations of the final configuration, possible extensions include regime-aware or adaptive risk-sensitive DRL. More advanced extensions such as multi-agent or self-rewarding approaches will be considered in later MTP stages.</p>
+<h2 id="18-final-summary">18. Final Summary</h2>
+<p>This project proposes a controlled empirical ablation study progressing from PPO to LSTM-PPO, DSR-based reward shaping, and turnover regularization. By maintaining consistent datasets, costs, training conditions, and walk-forward evaluation, the study aims to isolate the incremental contribution of temporal memory, risk-aware reward design, and turnover control. The resulting performance and failure analysis will provide an evidence-based basis for selecting the direction of BTP-2.</p>
+
+</body>
+</html>
