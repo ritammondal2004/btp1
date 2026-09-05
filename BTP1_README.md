@@ -195,18 +195,18 @@ To ensure strict comparability, all four models will be trained and evaluated in
 *   **Evaluation:** Dynamic walk-forward evaluation to prevent look-ahead bias and test temporal generalization.
 
 **MDP / POMDP Formulation:**
-Because financial markets are heavily influenced by unobservable latent factors, a standard MDP (S, A, P, R, γ) is insufficient. The temporal information motivates a Partially Observable MDP (POMDP), formulated as (O, A, P, R, γ), where the agent receives observations o_t ∈ O and utilizes an RNN (LSTM) to maintain a hidden belief state h_t approximating the true market state.
+Because financial markets are heavily influenced by unobservable latent factors, a standard MDP $(\mathcal{S}, \mathcal{A}, \mathcal{P}, \mathcal{R}, \gamma)$ is insufficient. The temporal information motivates a Partially Observable MDP (POMDP), formulated as $(\mathcal{O}, \mathcal{A}, \mathcal{P}, \mathcal{R}, \gamma)$, where the agent receives observations $o_t \in \mathcal{O}$ and utilizes an RNN (LSTM) to maintain a hidden belief state $h_t$ approximating the true market state.
 
 ## 7. State Representation
-The observation vector o_t provided to the agent strictly contains data available at decision time t (no look-ahead bias). It is divided into:
+The observation vector $o_t$ provided to the agent strictly contains data available at decision time $t$ (no look-ahead bias). It is divided into:
 1.  **Market Features:** Adjusted close prices and volumes (normalized).
 2.  **Technical Indicators:** MACD, RSI, CCI, ADX.
 3.  **Portfolio/Account Variables:** Current cash balance, current holdings (shares/weights), and total portfolio value.
 
 ## 8. Action Space
-The action space A is a continuous vector a_t ∈ [-1, 1]^N corresponding to the N assets in the portfolio.
-*   **Definition:** Each scalar a_{t,i} represents the target portfolio weight for asset i.
-*   **Constraint:** A Softmax or Dirichlet mapping will be applied post-network output to ensure Σ_{i=1}^{N} w_{t,i} = 1 and w_{t,i} ≥ 0 (assuming a long-only constraint for equity basics).
+The action space $\mathcal{A}$ is a continuous vector $a_t \in [-1, 1]^N$ corresponding to the $N$ assets in the portfolio. 
+*   **Definition:** Each scalar $a_{t,i}$ represents the target portfolio weight for asset $i$. 
+*   **Constraint:** A Softmax or Dirichlet mapping will be applied post-network output to ensure $\sum_{i=1}^N w_{t,i} = 1$ and $w_{t,i} \ge 0$ (assuming a long-only constraint for equity basics).
 
 ## 9. Portfolio Dynamics and Cost Model
 To prevent inconsistent gross-vs-net discrepancies and double-counting, the cost model is defined exactly once and applies to all four models.
@@ -216,23 +216,22 @@ To prevent inconsistent gross-vs-net discrepancies and double-counting, the cost
     $$R_{net, t} = \frac{V_t - V_{t-1}}{V_{t-1}} - \frac{C_t}{V_{t-1}}$$
 *   **Important:** $R_{net, t}$ represents the literal, measurable portfolio growth. It is the core input for all model reward functions.
 
-
 ## 10. Four-Model Ablation: Detailed Mathematical Modelling
 
 ### M1 — PPO Baseline
-*   **Architecture:** Memoryless feed-forward Multi-Layer Perceptron (MLP) for both the actor π_θ(a_t | s_t) and critic V_φ(s_t) networks.
-*   **State Input:** Only the current step observation s_t.
-*   **Reward:** Direct net return, r_t = R_net,t **(Liu et al. 2024, §3.1, p. 10)**.
-*   **Objective:** Standard Generalized Advantage Estimation (GAE) where Â_t = δ_t + (γλ)δ_{t+1} + ... and δ_t = r_t + γV_φ(s_{t+1}) - V_φ(s_t). The actor is updated using the clipped surrogate objective:
-    L_CLIP(θ) = Ê_t [ min( ρ_t(θ)Â_t, clip(ρ_t(θ), 1-ε, 1+ε)Â_t ) ]
+*   **Architecture:** Memoryless feed-forward Multi-Layer Perceptron (MLP) for both the actor $\pi_\theta(a_t|s_t)$ and critic $V_\phi(s_t)$ networks.
+*   **State Input:** Only the current step observation $s_t$.
+*   **Reward:** Direct net return, $r_t = R_{net, t}$ **(Liu et al. 2024, §3.1, p. 10)**.
+*   **Objective:** Standard Generalized Advantage Estimation (GAE) where $\hat{A}_t = \delta_t + (\gamma \lambda) \delta_{t+1} + \dots$ and $\delta_t = r_t + \gamma V_\phi(s_{t+1}) - V_\phi(s_t)$. The actor is updated using the clipped surrogate objective:
+    $$ L^{CLIP}(\theta) = \hat{\mathbb{E}}_t \left[ \min\left( \rho_t(\theta)\hat{A}_t, \text{clip}\left(\rho_t(\theta), 1-\epsilon, 1+\epsilon\right)\hat{A}_t \right) \right] $$
 
 ### M2 — LSTM-PPO (+ Temporal Memory)
 *   **Mechanism Added:** Temporal memory (LSTM) to handle POMDP nature of financial data.
-*   **Architecture:** Observation window F_t = [s_{t-W+1}, ..., s_t] is passed through an LSTM. The hidden state h_t and cell state c_t update recursively:
-    h_t, c_t = LSTM_cell(s_t, h_{t-1}, c_{t-1})
-*   **Conditioning:** The policy and value functions are now conditioned on the hidden representation: π_θ(a_t | h_t) and V_φ(h_t).
-*   **Parameters:** Rather than arbitrary tuning, we strictly adopt the architecture validated by **Zou et al. (2023, §4.5.1 & §4.5.2, p. 9)**: Time Window (W) = 30, Hidden Size (HS) = 512.
-*   **Reward:** Direct net return, r_t = R_net,t.
+*   **Architecture:** Observation window $F_t = [s_{t-W+1}, \dots, s_t]$ is passed through an LSTM. The hidden state $h_t$ and cell state $c_t$ update recursively:
+    $$ h_t, c_t = \text{LSTM}_{\text{cell}}(s_t, h_{t-1}, c_{t-1}) $$
+*   **Conditioning:** The policy and value functions are now conditioned on the hidden representation: $\pi_\theta(a_t | h_t)$ and $V_\phi(h_t)$.
+*   **Parameters:** Rather than arbitrary tuning, we strictly adopt the architecture validated by **Zou et al. (2023, §4.5.1 & §4.5.2, p. 9)**: Time Window ($W$) = 30, Hidden Size (HS) = 512.
+*   **Reward:** Direct net return, $r_t = R_{net, t}$.
 
 > 📸 **[Zou et al. 2023](https://arxiv.org/pdf/2212.02721), "A Novel DRL Based Automated Stock Trading System...", p. 9**
 
@@ -245,16 +244,16 @@ To prevent inconsistent gross-vs-net discrepancies and double-counting, the cost
 > *   **Purpose:** Justifies the direct adoption of the LSTM baseline variables without needing to re-tune from scratch.
 
 ### M3 — LSTM-PPO + DSR
-*   **Mechanism Added:** Dense, risk-aware online reward. Standard profit rewards (M1 & M2) are blind to variance and drawdown risk.
-*   **Formulation:** Standard Sharpe requires a full episode to compute, causing sparse delayed rewards. Following **Millea (2021, §5.1.2, p. 8, Eq. 6 & 7)**, we use exponential moving estimates for the first moment (A_t) and second moment (B_t) of the net returns R_net,t:
-    A_t = A_{t-1} + η(R_net,t - A_{t-1})
-    B_t = B_{t-1} + η(R_net,t^2 - B_{t-1})
+*   **Mechanism Added:** Dense, risk-aware online reward. Standard profit rewards (M1 & M2) are blind to variance and drawdown risk. 
+*   **Formulation:** Standard Sharpe requires a full episode to compute, causing sparse delayed rewards. Following **Millea (2021, §5.1.2, p. 8, Eq. 6 & 7)**, we use exponential moving estimates for the first moment ($A_t$) and second moment ($B_t$) of the net returns $R_{net, t}$:
+    $$A_t = A_{t-1} + \eta (R_{net, t} - A_{t-1})$$
+    $$B_t = B_{t-1} + \eta (R_{net, t}^2 - B_{t-1})$$
     Expanding the Sharpe ratio via a Taylor series yields the online DSR step-reward:
-    D_t = [B_{t-1}ΔA_t - 0.5 A_{t-1}ΔB_t] / (B_{t-1} - A_{t-1}^2 + ε)^(3/2)
-*   **Parameters:** η ∈ (0, 1] is the DSR moving-average adaptation rate, strictly distinct from the PPO discount factor γ.
+    $$D_t = \frac{B_{t-1}\Delta A_t - \frac{1}{2}A_{t-1}\Delta B_t}{(B_{t-1} - A_{t-1}^2 + \varepsilon)^{3/2}}$$
+*   **Parameters:** $\eta \in (0,1]$ is the DSR moving-average adaptation rate, strictly distinct from the PPO discount factor $\gamma$. 
 
-    **ε:** A small numerical-stability constant (e.g., 10^-8) added to the DSR denominator to prevent instability when the estimated variance approaches zero.
-*   **Reward:** r_t = D_t.
+    **$\varepsilon$:** A small numerical-stability constant (e.g., $10^{-8}$) added to the DSR denominator to prevent instability when the estimated variance approaches zero.
+*   **Reward:** $r_t = D_t$.
 
 > 📸 **[Millea 2021](https://www.mdpi.com/2306-5729/6/11/119), "Deep Reinforcement Learning for Trading—A Critical Survey", p. 8, Section 5.1.2**
 
@@ -267,9 +266,9 @@ To prevent inconsistent gross-vs-net discrepancies and double-counting, the cost
            
 ### M4 — LSTM-PPO + DSR + Turnover Regularization
 *   **Mechanism Added:** Action-friction control to regularize churn.
-*   **Formulation:** DSR mathematically incentivizes the agent to capture tiny, high-Sharpe anomalies, leading to high-frequency action oscillation ("churn"). In live markets, slippage destroys these theoretical returns. To strictly isolate friction-control from risk-sensitivity (M3 → M4 comparison), the turnover penalty must be additive.
-    r_t = D_t - λ_turnover × Σ_{i=1}^{N}(a_{t,i} - a_{t-1,i})^2
-*   **Note:** This penalty λ_turnover only punishes the RL *reward signal* to discourage churning. The actual portfolio simulation already accounts for true transaction costs in R_net,t. Comparing M3 to M4 will explicitly test the hypothesis that regularizing action outputs stabilizes the LSTM memory mechanism.
+*   **Formulation:** DSR mathematically incentivizes the agent to capture tiny, high-Sharpe anomalies, leading to high-frequency action oscillation ("churn"). In live markets, slippage destroys these theoretical returns. To strictly isolate friction-control from risk-sensitivity (M3 → M4 comparison), the turnover penalty must be additive. 
+    $$ r_t = D_t - \lambda_{turnover} \cdot \sum_{i=1}^N (a_{t,i} - a_{t-1,i})^2 $$
+*   **Note:** This penalty $\lambda_{turnover}$ only punishes the RL *reward signal* to discourage churning. The actual portfolio simulation already accounts for true transaction costs in $R_{net, t}$. Comparing M3 to M4 will explicitly test the hypothesis that regularizing action outputs stabilizes the LSTM memory mechanism.
 
 ## 11. Controlled Experimental Design
 
@@ -292,10 +291,10 @@ To isolate the incremental contribution of each mechanism, all models will be ev
 
 Financial time series are non-stationary, and model performance can depend strongly on the market period used for training and testing. A single static train/test split provides only one out-of-sample period and may not adequately evaluate robustness across changing market conditions. Therefore, we will use a strict walk-forward evaluation methodology:
 
-1. Train on window T_0 → T_k.
-2. Validate, if required for hyperparameter selection, on T_k → T_{k+m}.
-3. Test out-of-sample on T_{k+m} → T_{k+m+n}.
-4. Roll the entire window forward by n days and repeat.
+1. Train on window $T_0 \rightarrow T_k$.
+2. Validate, if required for hyperparameter selection, on $T_k \rightarrow T_{k+m}$.
+3. Test out-of-sample on $T_{k+m} \rightarrow T_{k+m+n}$.
+4. Roll the entire window forward by $n$ days and repeat.
 
 
 > 📸 **SCREENSHOT PLACEHOLDER 4 — [Liu et al. 2024, "Dynamic datasets and market environments...", p. 13, Figure 5]**
@@ -304,14 +303,14 @@ Financial time series are non-stationary, and model performance can depend stron
 
 ## 13. Evaluation Metrics
 The final out-of-sample arrays will be concatenated and evaluated using standard quantitative finance metrics to properly assess H2 and H3:
-*   **Cumulative Return (CR):** CR = (P_end - P_0) / P_0
+*   **Cumulative Return (CR):** $CR = \frac{P_{end} - P_0}{P_0}$
 *   **Annualized Return (AR)**
-*   **Sharpe Ratio (SR):** SR = (E[R_P] - R_f) / σ_P
+*   **Sharpe Ratio (SR):** $SR = \frac{\mathbb{E}[R_P] - R_f}{\sigma_P}$
 *   **Sortino Ratio**
-*   **Maximum Drawdown (MDD):** MDD = max_t[(Peak_t - V_t) / Peak_t]
+*   **Maximum Drawdown (MDD):**  $MDD = \max_t\left(\frac{Peak_t - V_t}{Peak_t}\right)$
 
 *   **Annualized Volatility**
-*   **Cumulative Transaction Cost**
+*   **Cumulative Transaction Cost** 
 
 Turnover and transaction cost are particularly important diagnostics for evaluating the effect of M4.
 
@@ -327,9 +326,9 @@ Turnover and transaction cost are particularly important diagnostics for evaluat
 | Model | Architecture | Reward | Memory | Turnover Regularization | Main Question |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **M1** | PPO (MLP) | Net Return | None | None | Baseline performance without memory, risk shaping, or action regularization |
-| **M2** | LSTM-PPO | Net Return | LSTM with window W selected during validation | None | Does temporal memory improve robustness and adaptability? |
+| **M2** | LSTM-PPO | Net Return | LSTM with window $W$ selected during validation | None | Does temporal memory improve robustness and adaptability? |
 | **M3** | LSTM-PPO | DSR | LSTM | None | Does risk-aware reward shaping improve risk-adjusted performance? |
-| **M4** | LSTM-PPO | DSR | LSTM | λ_turn × Σ_i(a_{t,i} - a_{t-1,i})^2 | Does turnover regularization reduce churn and trading costs while preserving performance? |
+| **M4** | LSTM-PPO | DSR | LSTM | $\lambda_{\text{turn}}\sum_i(a_{t,i}-a_{t-1,i})^2$ | Does turnover regularization reduce churn and trading costs while preserving performance? |
 
 **Execution Table:**
 
