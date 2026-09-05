@@ -246,8 +246,11 @@ To prevent inconsistent gross-vs-net discrepancies and double-counting, the cost
 ### M3 — LSTM-PPO + DSR
 *   **Mechanism Added:** Dense, risk-aware online reward. Standard profit rewards (M1 & M2) are blind to variance and drawdown risk. 
 *   **Formulation:** Standard Sharpe requires a full episode to compute, causing sparse delayed rewards. Following **Millea (2021, §5.1.2, p. 8, Eq. 6 & 7)**, we use exponential moving estimates for the first moment ($A_t$) and second moment ($B_t$) of the net returns $R_{net, t}$:
+
     $$A_t = A_{t-1} + \eta (R_{net, t} - A_{t-1})$$
+
     $$B_t = B_{t-1} + \eta (R_{net, t}^2 - B_{t-1})$$
+
     Expanding the Sharpe ratio via a Taylor series yields the online DSR step-reward:
     $$D_t = \frac{B_{t-1}\Delta A_t - \frac{1}{2}A_{t-1}\Delta B_t}{(B_{t-1} - A_{t-1}^2 + \varepsilon)^{3/2}}$$
 *   **Parameters:** $\eta \in (0,1]$ is the DSR moving-average adaptation rate, strictly distinct from the PPO discount factor $\gamma$. 
