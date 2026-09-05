@@ -17,7 +17,7 @@ Financial markets are characterized by low signal-to-noise ratios, high volatili
     - Authors: Yuling Huang, Chujin Zhou, Lin Zhang, Xiaoping Lu
     - Journal: Mathematics
 
-- **Liu et al. / FinRL-Meta (2024)**
+- **Liu et al. / FinRL-Meta (2024)** [link](https://link.springer.com/article/10.1007/s10994-023-06511-w)
     - Full Title: Dynamic datasets and market environments for financial reinforcement learning
     - Authors: Xiao-Yang Liu, Ziyi Xia, Hongyang Yang, Jiechao Gao, Daochen Zha, Ming Zhu, Christina Dan Wang, Zhaoran Wang, Jian Guo
     - Journal: Machine Learning
@@ -306,8 +306,12 @@ Financial time series are non-stationary, and model performance can depend stron
 4. Roll the entire window forward by $n$ days and repeat.
 
 
-> 📸 **SCREENSHOT PLACEHOLDER 4 — [Liu et al. 2024, "Dynamic datasets and market environments...", p. 13, Figure 5]**
-> *   **Capture:** Figure 5: "A rolling window of training-testing-trading pipeline with dynamic dataset".
+> 📸 **[Liu et al. 2024](https://link.springer.com/article/10.1007/s10994-023-06511-w) "Dynamic datasets and market environments...", p. 13, Figure 5**
+
+<div style="text-align: center; margin-top: 15px;">
+  <img src="ss/Liu_et_al_p13.png" alt="Liu_et_al_p13" width="420" height="240" style="display: block; margin: 0 auto;">  
+</div> 
+     
 > *   **Purpose:** Provides literature grounding for the strict walk-forward methodology preventing look-ahead bias.
 
 ## 13. Evaluation Metrics
@@ -323,8 +327,12 @@ The final out-of-sample arrays will be concatenated and evaluated using standard
 
 Turnover and transaction cost are particularly important diagnostics for evaluating the effect of M4.
 
-> 📸 **SCREENSHOT PLACEHOLDER 5 — [Huang et al. 2024, "A Self-Rewarding Mechanism...", p. 12, Section 4.2]**
-> *   **Capture:** The paragraph defining Cumulative Return, Annualized Return, Sharpe Ratio, and Maximum Drawdown.
+> 📸 **[Huang et al. 2024](https://www.mdpi.com/2227-7390/12/24/4020) "A Self-Rewarding Mechanism...", p. 12, Section 4.2**
+
+<div style="text-align: center; margin-top: 15px;">
+  <img src="ss/Huang_et_a_p12_sec4_2.png" alt="Huang_et_a_p12_sec4_2" width="470" height="240" style="display: block; margin: 0 auto;">   
+</div> 
+
 > *   **Purpose:** Academic justification of the standard financial evaluation metrics.
 
 ## 14. Experimental Matrix
