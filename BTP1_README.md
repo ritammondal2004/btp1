@@ -252,9 +252,9 @@ To prevent inconsistent gross-vs-net discrepancies and double-counting, the cost
     $$B_t = B_{t-1} + \eta (R_{net, t}^2 - B_{t-1})$$
 
     Expanding the Sharpe ratio via a Taylor series yields the online DSR step-reward:
+
     $$D_t = \frac{B_{t-1}\Delta A_t - \frac{1}{2}A_{t-1}\Delta B_t}{(B_{t-1} - A_{t-1}^2 + \varepsilon)^{3/2}}$$
 *   **Parameters:** $\eta \in (0,1]$ is the DSR moving-average adaptation rate, strictly distinct from the PPO discount factor $\gamma$. 
-
     **$\varepsilon$:** A small numerical-stability constant (e.g., $10^{-8}$) added to the DSR denominator to prevent instability when the estimated variance approaches zero.
 *   **Reward:** $r_t = D_t$.
 
@@ -270,7 +270,9 @@ To prevent inconsistent gross-vs-net discrepancies and double-counting, the cost
 ### M4 — LSTM-PPO + DSR + Turnover Regularization
 *   **Mechanism Added:** Action-friction control to regularize churn.
 *   **Formulation:** DSR mathematically incentivizes the agent to capture tiny, high-Sharpe anomalies, leading to high-frequency action oscillation ("churn"). In live markets, slippage destroys these theoretical returns. To strictly isolate friction-control from risk-sensitivity (M3 → M4 comparison), the turnover penalty must be additive. 
-    $$ r_t = D_t - \lambda_{turnover} \cdot \sum_{i=1}^N (a_{t,i} - a_{t-1,i})^2 $$
+
+    $$r_t = D_t - \lambda_{turnover} \cdot \sum_{i=1}^N (a_{t,i} - a_{t-1,i})^2$$
+    
 *   **Note:** This penalty $\lambda_{turnover}$ only punishes the RL *reward signal* to discourage churning. The actual portfolio simulation already accounts for true transaction costs in $R_{net, t}$. Comparing M3 to M4 will explicitly test the hypothesis that regularizing action outputs stabilizes the LSTM memory mechanism.
 
 ## 11. Controlled Experimental Design
