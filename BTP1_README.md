@@ -222,7 +222,7 @@ To prevent inconsistent gross-vs-net discrepancies and double-counting, the cost
 *   **Architecture:** Memoryless feed-forward Multi-Layer Perceptron (MLP) for both the actor $\pi_\theta(a_t|s_t)$ and critic $V_\phi(s_t)$ networks.
 *   **State Input:** Only the current step observation $s_t$.
 *   **Reward:** Direct net return, $r_t = R_{net, t}$ **(Liu et al. 2024, §3.1, p. 10)**.
-*   **Objective:** Standard Generalized Advantage Estimation (GAE) where $Â_t = δ_t + (γλ)δ_{t+1} + ... and δ_t = r_t + γV_φ(s_{t+1}) - V_φ(s_t)$. The actor is updated using the clipped surrogate objective:
+*   **Objective:** Standard Generalized Advantage Estimation (GAE) where $Â_t = δ_t + (γλ)δ_{t+1}$ +...  and  $δ_t = r_t + γV_φ(s_{t+1}) - V_φ(s_t)$. The actor is updated using the clipped surrogate objective:
 
     $$L^{CLIP}(\theta) = \hat{\mathbb{E}}_t \left[ \min\left( \rho_t(\theta)\hat{A}_t, \text{clip}\left(\rho_t(\theta), 1-\epsilon, 1+\epsilon\right)\hat{A}_t \right) \right]$$
 
