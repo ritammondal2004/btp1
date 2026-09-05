@@ -229,7 +229,9 @@ To prevent inconsistent gross-vs-net discrepancies and double-counting, the cost
 ### M2 — LSTM-PPO (+ Temporal Memory)
 *   **Mechanism Added:** Temporal memory (LSTM) to handle POMDP nature of financial data.
 *   **Architecture:** Observation window $F_t = [s_{t-W+1}, \dots, s_t]$ is passed through an LSTM. The hidden state $h_t$ and cell state $c_t$ update recursively:
-    $$ h_t, c_t = \text{LSTM}_{\text{cell}}(s_t, h_{t-1}, c_{t-1}) $$
+
+    $$h_t, c_t = \text{LSTM}_{\text{cell}}(s_t, h_{t-1}, c_{t-1})$$
+       
 *   **Conditioning:** The policy and value functions are now conditioned on the hidden representation: $\pi_\theta(a_t | h_t)$ and $V_\phi(h_t)$.
 *   **Parameters:** Rather than arbitrary tuning, we strictly adopt the architecture validated by **Zou et al. (2023, §4.5.1 & §4.5.2, p. 9)**: Time Window ($W$) = 30, Hidden Size (HS) = 512.
 *   **Reward:** Direct net return, $r_t = R_{net, t}$.
