@@ -187,42 +187,311 @@ to empirically quantify the incremental effect of each mechanism on **return, ri
 | **Wang & Liu (2025)** | ART-DRL: Adaptive risk-sensitive DRL. | Equities | Market/Tech Features | Continuous | Adaptive Risk | Dynamically shifts risk sensitivity based on market regime. | Focuses on adaptive risk sensitivity but does not isolate the independent contribution of temporal memory versus reward shaping in a controlled ablation. |
 
 ## 6. Common Trading Environment
-To ensure strict comparability, all four models will be trained and evaluated in the exact same simulated environment:
-*   **Data:** Daily OHLCV data for a defined universe of equities.
-*   **Transaction Costs:** Fixed proportional commission fee.
-*   **Slippage Assumptions:** Fixed slippage penalty applied per trade volume to simulate execution friction.
-*   **Daily Rebalancing:** The agent acts once at the end of the daily close to adjust target holdings.
-*   **Evaluation:** Dynamic walk-forward evaluation to prevent look-ahead bias and test temporal generalization.
+## 6. Common Trading Environment
+
+To ensure strict comparability, all four models will be trained and evaluated in the same simulated trading environment.
+
+- **Data:** Daily OHLCV data for a fixed universe of \(N\) equities.
+- **Decision Frequency:** One portfolio-rebalancing decision is made per trading day.
+- **Transaction Costs:** A fixed proportional transaction-cost rate \(c_{\mathrm{trans}}\) is applied to traded portfolio value.
+- **Slippage:** A fixed proportional slippage assumption may be incorporated into the effective transaction-cost rate.
+- **Portfolio Constraint:** Long-only allocation across \(N\) stocks and an explicit cash component.
+- **Evaluation:** Strict walk-forward training, validation (where required), and out-of-sample testing.
+
+### POMDP Formulation
+
+The daily trading problem is formulated as a Partially Observable Markov Decision Process (POMDP). The agent cannot observe all latent factors governing financial markets and therefore receives only a partial observation of the underlying environment.
+
+We define the POMDP as:
+
+$$
+\mathcal{P}=(\mathcal{S},\mathcal{A},\mathcal{T},\mathcal{R},\Omega,\gamma)
+$$
+
+where:
+
+- ${S}$: is the underlying environment state space,
+- \(\mathcal{A}\) is the action space,
+- \(\mathcal{T}\) represents the environment transition dynamics,
+- \(\mathcal{R}\) is the reward function,
+- \(\Omega\) is the observation space,
+- \(\gamma\in(0,1]\) is the PPO discount factor.
+
+At time \(t\), the agent receives an observation \(s_t\in\Omega\) containing only information available up to the current decision time. For M1, the policy operates directly on \(s_t\). For M2--M4, a sequence of observations is provided to an LSTM to construct a temporal representation \(h_t\).
+
+
 
 **MDP / POMDP Formulation:**
 Because financial markets are heavily influenced by unobservable latent factors, a standard MDP $(\mathcal{S}, \mathcal{A}, \mathcal{P}, \mathcal{R}, \gamma)$ is insufficient. The temporal information motivates a Partially Observable MDP (POMDP), formulated as $(\mathcal{O}, \mathcal{A}, \mathcal{P}, \mathcal{R}, \gamma)$, where the agent receives observations $o_t \in \mathcal{O}$ and utilizes an RNN (LSTM) to maintain a hidden belief state $h_t$ approximating the true market state.
 
-## 7. State Representation
-The observation vector $o_t$ provided to the agent strictly contains data available at decision time $t$ (no look-ahead bias). It is divided into:
-1.  **Market Features:** Adjusted close prices and volumes (normalized).
-2.  **Technical Indicators:** MACD, RSI, CCI, ADX.
-3.  **Portfolio/Account Variables:** Current cash balance, current holdings (shares/weights), and total portfolio value.
+
+## 7. State / Observation Representation
+
+The observation provided to the agent contains only information available at decision time \(t\), with all feature transformations computed causally to avoid look-ahead bias.
+
+For each asset \(i\in\{1,\ldots,N\}\), define the per-asset feature vector:
+
+$$
+f_{i,t}\in\mathbb{R}^{F}
+$$
+
+where \(F\) is the number of features per asset.
+
+The feature vector contains normalized return, price-relative, volume, and technical-indicator information, including:
+
+- log return,
+- OHLC price-relative features,
+- normalized volume,
+- RSI,
+- MACD,
+- EMA-relative features,
+- Bollinger \(\%B\) and bandwidth,
+- CCI,
+- ADX.
+
+Raw price levels and raw portfolio/account dollar values are not directly provided to the agent.
+
+The market feature vector is formed by concatenating the feature vectors of all \(N\) assets:
+
+$$
+x_t=
+\operatorname{concat}
+\left(
+f_{1,t},f_{2,t},\ldots,f_{N,t}
+\right)
+\in\mathbb{R}^{NF}.
+$$
+
+The portfolio state is represented by the current portfolio-weight vector:
+
+$$
+w_t^{cur}
+=
+\left[
+w_{1,t}^{cur},
+\ldots,
+w_{N,t}^{cur},
+w_{cash,t}^{cur}
+\right]
+\in\mathbb{R}^{N+1},
+$$
+
+subject to:
+
+$$
+w_{i,t}^{cur}\geq0,
+\qquad
+w_{cash,t}^{cur}\geq0,
+$$
+
+$$
+\sum_{i=1}^{N}w_{i,t}^{cur}
++w_{cash,t}^{cur}=1.
+$$
+
+The complete observation is therefore:
+
+$$
+\boxed{
+s_t=[x_t;w_t^{cur}]
+}
+$$
+
+with dimension:
+
+$$
+s_t\in\mathbb{R}^{NF+N+1}.
+$$
+
+Here:
+
+- \(N\) = number of stocks in the trading universe,
+- \(F\) = number of features per stock,
+- \(f_{i,t}\) = feature vector of asset \(i\) at time \(t\),
+- \(x_t\) = concatenated market-feature vector,
+- \(w_t^{cur}\) = current portfolio weights including cash,
+- \(s_t\) = complete observation available to the RL agent.
+
+### Temporal Representation
+
+For M1, only the current observation \(s_t\) is provided to the policy.
+
+For M2--M4, a historical observation window of length \(W\) is constructed:
+
+$$
+F_t=
+[s_{t-W+1},\ldots,s_{t-1},s_t]
+$$
+
+where:
+
+$$
+F_t\in
+\mathbb{R}^{W\times(NF+N+1)}.
+$$
+
+The sequence \(F_t\) is processed by an LSTM to produce the hidden representation:
+
+$$
+(h_t,c_t)
+=
+\operatorname{LSTM}(F_t),
+$$
+
+where \(h_t\in\mathbb{R}^{H}\) is the hidden representation and \(c_t\in\mathbb{R}^{H}\) is the LSTM cell state. \(H\) denotes the LSTM hidden size.
+
+For the initial BTP-1 configuration:
+
+$$
+W=30,\qquad H=512.
+$$
+
+The LSTM provides a learned temporal representation of the historical observations; it does not explicitly predict future prices.
 
 ## 8. Action Space
-The action space $\mathcal{A}$ is a continuous vector $a_t \in [-1, 1]^N$ corresponding to the $N$ assets in the portfolio. 
-*   **Definition:** Each scalar $a_{t,i}$ represents the target portfolio weight for asset $i$. 
-*   **Constraint:** A Softmax or Dirichlet mapping will be applied post-network output to ensure $\sum_{i=1}^N w_{t,i} = 1$ and $w_{t,i} \ge 0$ (assuming a long-only constraint for equity basics).
+The action space $\mathcal{A}$ must ensure that portfolio weights are non-negative and sum to 1. Rather than predicting unbounded values and applying a post-hoc Softmax, we directly ground our continuous action space in the Dirichlet distribution formulation presented by **Yang et al. (2022)**.
+
+*   **Reference:** *Yang, H., Park, H., & Lee, K. (2022), "A Selective Portfolio Management Algorithm with Off-Policy Reinforcement Learning Using Dirichlet Distribution"*
+
+The action $a_t$ is defined exactly as the target portfolio weights:
+
+$$a_t \equiv w_t^{target}$$
+
+where $w_{i,t}^{target} \ge 0$ and $\sum_{i=1}^N w_{i,t}^{target} + w_{cash,t}^{target} = 1$.
+
+**Dirichlet Parameterization:**
+Following Yang et al., the policy network outputs the concentration parameters $\alpha_t$ of a Dirichlet distribution. To ensure $\alpha_t > 0$, we use an exponential mapping from the network's output logits $m_t$:
+
+$$m_t = W_a h_t + b_a$$
+$$\alpha_{i,t} = \exp(m_{i,t})$$
+
+The target weights are then sampled from the resulting Dirichlet distribution:
+
+$$w_t^{target} \sim \text{Dirichlet}(\alpha_t)$$
+
+The expected weight for each asset is naturally defined by the properties of the Dirichlet distribution:
+
+$$\mathbb{E}[w_{i,t}^{target}] = \frac{\alpha_{i,t}}{\sum_j \alpha_{j,t}}$$
+
+Here:
+
+- \(a_t\) = RL action at time \(t\),
+- \(w_t^{target}\) = target portfolio weights selected by the agent,
+- \(w_{i,t}^{target}\) = target weight of stock \(i\),
+- \(w_{cash,t}^{target}\) = target cash weight,
+- \(\alpha_t\) = Dirichlet concentration-parameter vector,
+- \(m_t\) = unconstrained actor output,
+- \(W_a,b_a\) = parameters of the actor's final layer,
+- \(h_t\) = LSTM hidden representation for M2--M4.
+
+The Dirichlet formulation is motivated by Yang et al. (2022), who use the Dirichlet distribution to model portfolio allocations on the simplex. Their formulation is adapted here to the on-policy PPO setting used in BTP-1.
+
+>  **[Yang et al. 2022](https://www.mdpi.com/2073-8994/14/3/605), "A Selective Portfolio Management Algorithm...", Section 3.3, Equations 13-16**
+
+<div style="text-align: center; margin-top: 15px;">
+  <p><i>📸 SCREENSHOT PLACEHOLDER: Yang et al. Section 3.3 (Equations 13-16)</i></p>
+</div>
+
+> *   **Purpose:** Establishes the literature-grounded mathematical mechanism for learning valid, continuous portfolio weights via Dirichlet concentration parameters. (Note: While Yang et al. apply this in an off-policy framework, we adopt the continuous action-space parameterization for our on-policy PPO).
+
 
 ## 9. Portfolio Dynamics and Cost Model
-To prevent inconsistent gross-vs-net discrepancies and double-counting, the cost model is defined exactly once and applies to all four models.
-*   **Total Portfolio Value ($V_t$):** $V_t = b_t + \sum_{i=1}^N h_{t,i} p_{t,i}$
-*   **Transaction Cost ($C_t$):** Computed based on the change in weights: $C_t = c_{trans} \sum_{i=1}^N |w_{t,i} - w_{t-1,i}| \times V_t$
-*   **Net Daily Return ($R_{net, t}$):** The true accounting return after all frictions:
-    $$R_{net, t} = \frac{V_t - V_{t-1}}{V_{t-1}} - \frac{C_t}{V_{t-1}}$$
-*   **Important:** $R_{net, t}$ represents the literal, measurable portfolio growth. It is the core input for all model reward functions.
+
+The portfolio environment converts the target allocation generated by the agent into actual portfolio rebalancing, applies transaction costs, and updates portfolio wealth.
+
+### 9.1 Current and Target Portfolio Weights
+
+The current portfolio before rebalancing is:
+
+$$
+w_t^{cur}
+=
+[w_{1,t}^{cur},\ldots,w_{N,t}^{cur},w_{cash,t}^{cur}].
+$$
+
+The agent selects:
+
+$$
+w_t^{target}
+=
+[w_{1,t}^{target},\ldots,w_{N,t}^{target},w_{cash,t}^{target}].
+$$
+
+For each traded stock, the change in allocation is:
+
+Δw<sub>i,t</sub> = w<sub>i,t</sub><sup>target</sup> - w<sub>i,t</sub><sup>cur</sup>
+
+Here:
+
+- Δw<sub>i,t</sub> > 0 indicates an increase in allocation,
+- Δw<sub>i,t</sub> < 0 indicates a decrease in allocation,
+- Δw<sub>i,t</sub> = 0 indicates no change.
+
+### 9.2 Transaction Cost
+
+Transaction cost is modeled as proportional to the absolute amount reallocated:
+
+C<sub>t</sub> = c<sub>trans</sub> × V<sub>t-1</sub> × Σ<sub>i=1</sub><sup>N</sup> |Δw<sub>i,t</sub>|
+
+where:
+
+- C<sub>t</sub> = monetary transaction cost at time t,
+- c<sub>trans</sub> = proportional transaction-cost rate,
+- V<sub>t-1</sub> = portfolio value immediately before rebalancing,
+- Δw<sub>i,t</sub> = change in stock i's portfolio weight.
+
+The cash component is not separately charged; cash is the residual portfolio allocation after stock rebalancing.
+
+### 9.3 Portfolio Wealth Evolution
+
+After paying transaction costs, the portfolio evolves according to the target stock allocation and realized stock returns:
+
+$$
+V_t
+=
+(V_{t-1}-C_t)
+\left[
+\sum_{i=1}^{N}
+w_{i,t}^{target}(1+R_{i,t})
++
+w_{cash,t}^{target}
+\right].
+$$
+
+Here:
+
+- \(V_t\) = portfolio value at the end of period \(t\),
+- \(R_{i,t}\) = realized return of stock \(i\) over period \(t\),
+- \(w_{i,t}^{target}\) = target weight allocated to stock \(i\),
+- \(w_{cash,t}^{target}\) = target cash allocation.
+
+The cash component is assumed to have zero return over the daily holding period for BTP-1; therefore, no risk-free-rate term is included in the portfolio wealth equation.
+
+### 9.4 Net Portfolio Return
+
+The realized net portfolio return is:
+
+$$
+R_{net,t}
+=
+\frac{V_t-V_{t-1}}{V_{t-1}}.
+$$
+
+Because transaction costs are already deducted when computing \(V_t\), they are not subtracted again from \(R_{net,t}\).
+
+Thus, \(R_{net,t}\) is the single accounting measure of realized portfolio growth after modeled trading frictions and is used as the direct reward for M1 and M2 and as the return input to the DSR calculation for M3 and M4.
+
+
+
+
 
 ## 10. Four-Model Ablation: Detailed Mathematical Modelling
 
 ### M1 — PPO Baseline
 *   **Architecture:** Memoryless feed-forward Multi-Layer Perceptron (MLP) for both the actor $\pi_\theta(a_t|s_t)$ and critic $V_\phi(s_t)$ networks.
-*   **State Input:** Only the current step observation $s_t$.
+*   **State Input:** Only the instantaneous current step observation $s_t$.
 *   **Reward:** Direct net return, $r_t = R_{net, t}$ **(Liu et al. 2024, §3.1, p. 10)**.
-*   **Objective:** Standard Generalized Advantage Estimation (GAE) where $Â_t = δ_t + (γλ)δ_{t+1}$ +...  and  $δ_t = r_t + γV_φ(s_{t+1}) - V_φ(s_t)$. The actor is updated using the clipped surrogate objective:
+*   **Objective:** Standard Generalized Advantage Estimation (GAE) where $\hat{A}_t = \delta_t + (\gamma\lambda)\delta_{t+1} + \dots$ and $\delta_t = r_t + \gamma V_\phi(s_{t+1}) - V_\phi(s_t)$. The actor is updated using the clipped surrogate objective:
 
     $$L^{CLIP}(\theta) = \hat{\mathbb{E}}_t \left[ \min\left( \rho_t(\theta)\hat{A}_t, \text{clip}\left(\rho_t(\theta), 1-\epsilon, 1+\epsilon\right)\hat{A}_t \right) \right]$$
 
@@ -230,9 +499,9 @@ To prevent inconsistent gross-vs-net discrepancies and double-counting, the cost
 *   **Mechanism Added:** Temporal memory (LSTM) to handle POMDP nature of financial data.
 *   **Architecture:** Observation window $F_t = [s_{t-W+1}, \dots, s_t]$ is passed through an LSTM. The hidden state $h_t$ and cell state $c_t$ update recursively:
 
-    $h_t, c_t = LSTM_{cell}(s_t, h_{t-1}, c_{t-1})$
+    $$h_t, c_t = LSTM_{cell}(s_t, h_{t-1}, c_{t-1})$$
        
-*   **Conditioning:** The policy and value functions are now conditioned on the hidden representation: $\pi_\theta(a_t | h_t)$ and $V_\phi(h_t)$.
+*   **Conditioning:** The policy and value functions are now conditioned on the hidden representation: $\pi_\theta(a_t | h_t)$ and $V_\phi(h_t)$. Note that the LSTM does not explicitly predict future prices; it forms a learned temporal representation $h_t$.
 *   **Parameters:** Rather than arbitrary tuning, we strictly adopt the architecture validated by **Zou et al. (2023, §4.5.1 & §4.5.2, p. 9)**: Time Window ($W$) = 30, Hidden Size (HS) = 512.
 *   **Reward:** Direct net return, $r_t = R_{net, t}$.
 
@@ -274,9 +543,10 @@ To prevent inconsistent gross-vs-net discrepancies and double-counting, the cost
 *   **Mechanism Added:** Action-friction control to regularize churn.
 *   **Formulation:** DSR mathematically incentivizes the agent to capture tiny, high-Sharpe anomalies, leading to high-frequency action oscillation ("churn"). In live markets, slippage destroys these theoretical returns. To strictly isolate friction-control from risk-sensitivity (M3 → M4 comparison), the turnover penalty must be additive. 
 
-    $$r_t = D_t - \lambda_{turnover} \cdot \sum_{i=1}^N (a_{t,i} - a_{t-1,i})^2$$
+    $$r_t = D_t - \lambda_{turnover} \sum_{i=1}^N (w_{i,t}^{target} - w_{i,t}^{cur})^2$$
     
 *   **Note:** This penalty $\lambda_{turnover}$ only punishes the RL *reward signal* to discourage churning. The actual portfolio simulation already accounts for true transaction costs in $R_{net, t}$. Comparing M3 to M4 will explicitly test the hypothesis that regularizing action outputs stabilizes the LSTM memory mechanism.
+
 
 ## 11. Controlled Experimental Design
 
@@ -344,7 +614,7 @@ Turnover and transaction cost are particularly important diagnostics for evaluat
 | **M1** | PPO (MLP) | Net Return | None | None | Baseline performance without memory, risk shaping, or action regularization |
 | **M2** | LSTM-PPO | Net Return | LSTM with window $W$ selected during validation | None | Does temporal memory improve robustness and adaptability? |
 | **M3** | LSTM-PPO | DSR | LSTM | None | Does risk-aware reward shaping improve risk-adjusted performance? |
-| **M4** | LSTM-PPO | DSR | LSTM | $\lambda_{\text{turn}}\sum_i(a_{t,i}-a_{t-1,i})^2$ | Does turnover regularization reduce churn and trading costs while preserving performance? |
+| **M4** | LSTM-PPO | DSR | LSTM | $\lambda_{\text{turn}}\sum_i(w_{i,t}^{target}-w_{i,t}^{cur})^2$ | Does turnover regularization reduce excessive allocation changes and trading costs while preserving risk-adjusted performance? |
 
 **Execution Table:**
 
@@ -379,3 +649,60 @@ We will proactively investigate and report failure modes. If a model performs po
 
 ## 18. Final Summary
 This project proposes a controlled empirical ablation study progressing from PPO to LSTM-PPO, DSR-based reward shaping, and turnover regularization. By maintaining consistent datasets, costs, training conditions, and walk-forward evaluation, the study aims to isolate the incremental contribution of temporal memory, risk-aware reward design, and turnover control. The resulting performance and failure analysis will provide an evidence-based basis for selecting the direction of BTP-2.
+
+
+----
+
+### Mathematical Notation and Parameters
+
+| Symbol | Meaning |
+|---|---|
+| \(t\) | Trading day / decision time |
+| \(i\) | Asset index |
+| \(N\) | Number of stocks in the trading universe |
+| \(F\) | Number of input features per asset |
+| \(f_{i,t}\) | Feature vector of asset \(i\) at time \(t\), \(f_{i,t}\in\mathbb{R}^F\) |
+| \(x_t\) | Concatenated market-feature vector, \(x_t\in\mathbb{R}^{NF}\) |
+| \(w_t^{cur}\) | Current portfolio-weight vector including cash |
+| $w_{i,t}^{cur}$ | Current portfolio weight of stock \(i\) |
+| \(w_t^{target}\) | Target portfolio-weight vector selected by the agent |
+| \(w_{i,t}^{target}\) | Target portfolio weight of stock \(i\) |
+| \(w_{cash,t}^{target}\) | Target cash allocation |
+| \(s_t\) | Complete agent observation at time \(t\) |
+| \(W\) | Historical lookback-window length |
+| \(F_t\) | Sequence of the previous \(W\) observations |
+| \(H\) | LSTM hidden-state dimension |
+| \(h_t\) | LSTM hidden representation |
+| \(c_t\) | LSTM cell state |
+| \(a_t\) | RL action, defined as \(a_t\equiv w_t^{target}\) |
+| \(m_t\) | Unconstrained actor output before Dirichlet parameterization |
+| \(W_a,b_a\) | Parameters of the actor's final layer |
+| \(\alpha_t\) | Dirichlet concentration-parameter vector |
+| \(\alpha_{i,t}\) | Dirichlet concentration parameter for component \(i\) |
+| \(\Delta w_{i,t}\) | Change in stock \(i\)'s portfolio allocation |
+| \(V_t\) | Total portfolio value at the end of period \(t\) |
+| \(C_t\) | Monetary transaction cost at time \(t\) |
+| \(c_{\mathrm{trans}}\) | Proportional transaction-cost rate |
+| \(R_{i,t}\) | Realized return of stock \(i\) during period \(t\) |
+| \(R_{net,t}\) | Net portfolio return after modeled trading costs |
+| \(r_t\) | RL reward at time \(t\) |
+| \(A_t\) | Exponentially weighted first moment of net returns for DSR |
+| \(B_t\) | Exponentially weighted second moment of net returns for DSR |
+| \(D_t\) | Differential Sharpe Ratio reward |
+| \(\eta\) | DSR moving-average adaptation rate |
+| \(\varepsilon_{\mathrm{DSR}}\) | Numerical-stability constant in the DSR denominator |
+| \(\lambda_{\mathrm{turn}}\) | Turnover-regularization coefficient |
+| \(\gamma\) | PPO discount factor |
+| \(\lambda_{\mathrm{GAE}}\) | GAE bias-variance trade-off parameter |
+| \(\epsilon_{\mathrm{PPO}}\) | PPO clipping parameter |
+| \(\hat{A}_t\) | Estimated advantage used by PPO |
+| \(\delta_t\) | One-step temporal-difference error used by GAE |
+| \(\pi_\theta\) | PPO policy parameterized by \(\theta\) |
+| \(V_\phi\) | PPO critic/value function parameterized by \(\phi\) |
+| \(\rho_t\) | PPO probability ratio between new and old policies |
+| \(\mathcal{S}\) | Underlying environment state space |
+| \(\Omega\) | Observation space available to the agent |
+| \(\mathcal{A}\) | Action space |
+| \(\mathcal{T}\) | Environment transition dynamics |
+| \(\mathcal{R}\) | Reward function |
+| \(R_{net,t}\) | Realized net portfolio return used by M1/M2 and DSR |
