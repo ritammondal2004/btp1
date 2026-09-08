@@ -1,5 +1,5 @@
-# Risk-Aware Deep Reinforcement Learning for Daily Stock Trading 
-### *A Controlled Ablation of Temporal Memory, Reward Shaping, and Turnover Regularization*
+# Risk-Aware Deep Reinforcement Learning for Daily Portfolio Allocation
+### *Dissecting Temporal Representation and Online Reward Mechanics. A Controlled Ablation of Temporal Memory, Reward Shaping, and Turnover Regularization*
 
   
 ## 1. Project Overview
