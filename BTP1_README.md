@@ -449,16 +449,7 @@ The cash component is not separately charged; cash is the residual portfolio all
 After paying transaction costs, the portfolio evolves according to the target stock allocation and realized stock returns:
 
 $$
-V_t
-=
-(V_{t-1}-C_t)
-\left[
-\sum_{i=1}^{N}
-w_{i,t}^{target}(1+R_{i,t})
-+
-w_{cash,t}^{target}
-\right].
-$$
+V_t = (V_{t-1}-C_t)\left[\sum_{i=1}^{N}w_{i,t}^{target}(1+R_{i,t}) + w_{cash,t}^{target}\right]$$
 
 Here:
 
