@@ -658,11 +658,7 @@ $$
 
 The BTP-2 framework may also incorporate an auxiliary prediction task for future price movement or future return over a selected horizon:
 
-$$
-y_{i,t}^{(H)}
-=
-\frac{P_{i,t+H}-P_{i,t}}{P_{i,t}}.
-$$
+$$y_{i,t}^{(H)} = \frac{P_{i,t+H}-P_{i,t}}{P_{i,t}}.$$
 
 This would allow the model to study both **trading decisions** and **future market-movement prediction** within a unified framework.
 
