@@ -243,7 +243,7 @@ For each asset $(i\in\{1,\ldots,N\})$, define the per-asset feature vector:
 
 $$
 f_{i,t}=
-\begin{bmatrix}
+\begin{bmatrix} 
  r_{i,t} ,  \frac{O_{i,t}}{C_{i,t}}-1 , \frac{H_{i,t}}{C_{i,t}}-1 , \frac{L_{i,t}}{C_{i,t}}-1 , \tilde v_{i,t} , \frac{RSI_{i,t}}{50}-1 & MACD_{i,t} , \frac{EMA^{fast}_{i,t}}{C_{i,t}}-1 , \frac{EMA^{slow}_{i,t}}{C_{i,t}}-1 , \%B_{i,t} , BW_{i,t} , \frac{CCI_{i,t}}{100} , \frac{ADX_{i,t}}{100}
 \end{bmatrix}^{\top}
 \in\mathbb{R}^{13}
