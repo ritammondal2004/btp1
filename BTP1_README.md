@@ -187,7 +187,6 @@ to empirically quantify the incremental effect of each mechanism on **return, ri
 | **Wang & Liu (2025)** | ART-DRL: Adaptive risk-sensitive DRL. | Equities | Market/Tech Features | Continuous | Adaptive Risk | Dynamically shifts risk sensitivity based on market regime. | Focuses on adaptive risk sensitivity but does not isolate the independent contribution of temporal memory versus reward shaping in a controlled ablation. |
 
 ## 6. Common Trading Environment
-## 6. Common Trading Environment
 
 To ensure strict comparability, all four models will be trained and evaluated in the same simulated trading environment.
 
@@ -374,11 +373,21 @@ Here:
 
 The Dirichlet formulation is motivated by Yang et al. (2022), who use the Dirichlet distribution to model portfolio allocations on the simplex. Their formulation is adapted here to the on-policy PPO setting used in BTP-1.
 
->  **[Yang et al. 2022](https://www.mdpi.com/2073-8994/14/3/605), "A Selective Portfolio Management Algorithm...", Section 3.3, Equations 13-16**
+>  **[Yang et al. 2022](https://www.mdpi.com/2075-1680/11/12/664), Section 3.3, Equations 13-16**
+
+*A Selective Portfolio Management Algorithm with Off-Policy Reinforcement Learning Using Dirichlet Distribution*
 
 <div style="text-align: center; margin-top: 15px;">
-  <p><i>📸 SCREENSHOT PLACEHOLDER: Yang et al. Section 3.3 (Equations 13-16)</i></p>
-</div>
+  <img src="ss/yang_etal_eq13.png" alt="yang_etal_eq13" width="520" height="190" style="display: block; margin: 0 auto;">  
+</div>  
+
+<div style="text-align: center; margin-top: 15px;">
+  <img src="ss/yang_etal_eq14_15.png" alt="yang_etal_eq14_15" width="520" height="210" style="display: block; margin: 0 auto;">  
+</div> 
+
+<div style="text-align: center; margin-top: 15px;">
+  <img src="ss/yang_etal_eq16.png" alt="yang_etal_eq16" width="520" height="170" style="display: block; margin: 0 auto;">  
+</div> 
 
 > *   **Purpose:** Establishes the literature-grounded mathematical mechanism for learning valid, continuous portfolio weights via Dirichlet concentration parameters. (Note: While Yang et al. apply this in an off-policy framework, we adopt the continuous action-space parameterization for our on-policy PPO).
 

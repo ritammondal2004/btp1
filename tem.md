@@ -42,7 +42,7 @@ This translates into three specific, testable hypotheses:
 
 ## 4. Research Gap
 
-> 📸 **[Zou et al. 2023, p. 9, Tables 2 and 3](https://arxiv.org/pdf/2212.02721)**
+>  **[Zou et al. 2023, p. 9, Tables 2 and 3](https://arxiv.org/pdf/2212.02721)**
 
 *A Novel Deep Reinforcement Learning Based Automated Stock Trading System Using Cascaded LSTM Networks*
 
@@ -63,7 +63,7 @@ Although deep reinforcement learning has shown promise for automated stock tradi
 
 ---
 
-> 📸 **[Huang et al. 2024, p. 1 and p. 8](https://www.mdpi.com/2227-7390/12/24/4020)** 
+>  **[Huang et al. 2024, p. 1 and p. 8](https://www.mdpi.com/2227-7390/12/24/4020)** 
 
 *A Self-Rewarding Mechanism in Deep Reinforcement Learning for Trading Strategy Optimization*
 
@@ -88,7 +88,7 @@ Although deep reinforcement learning has shown promise for automated stock tradi
 ---
 
 
-> 📸 **[Millea 2021, p. 21, Section 12.1](https://www.mdpi.com/2306-5729/6/11/119)**
+>  **[Millea 2021, p. 21, Section 12.1](https://www.mdpi.com/2306-5729/6/11/119)**
 
 *Deep Reinforcement Learning for Trading—A Critical Survey*
                 
@@ -105,7 +105,7 @@ Despite increasing interest in deep reinforcement learning for financial trading
 
 ---
 
-> 📸 **[Liu et al. 2024, p. 3, 11, 27](https://link.springer.com/article/10.1007/s10994-023-06511-w)**
+>  **[Liu et al. 2024, p. 3, 11, 27](https://link.springer.com/article/10.1007/s10994-023-06511-w)**
 
 *Dynamic datasets and market environments for financial reinforcement learning*
 
@@ -122,7 +122,7 @@ Despite progress in financial reinforcement learning, existing studies still rel
 
 ----
 
-> 📸 **[Wang & Liu (2025), Page 3 and Page 4, section 2.3](https://www.mdpi.com/1911-8074/18/7/347)** 
+>  **[Wang & Liu (2025), Page 3 and Page 4, section 2.3](https://www.mdpi.com/1911-8074/18/7/347)** 
 
 *Risk-Sensitive Deep Reinforcement Learning for Portfolio Optimization*
 
@@ -187,42 +187,108 @@ to empirically quantify the incremental effect of each mechanism on **return, ri
 | **Wang & Liu (2025)** | ART-DRL: Adaptive risk-sensitive DRL. | Equities | Market/Tech Features | Continuous | Adaptive Risk | Dynamically shifts risk sensitivity based on market regime. | Focuses on adaptive risk sensitivity but does not isolate the independent contribution of temporal memory versus reward shaping in a controlled ablation. |
 
 ## 6. Common Trading Environment
-To ensure strict comparability, all four models will be trained and evaluated in the exact same simulated environment:
-*   **Data:** Daily OHLCV data for a defined universe of equities.
-*   **Transaction Costs:** Fixed proportional commission fee.
-*   **Slippage Assumptions:** Fixed slippage penalty applied per trade volume to simulate execution friction.
-*   **Daily Rebalancing:** The agent acts once at the end of the daily close to adjust target holdings.
-*   **Evaluation:** Dynamic walk-forward evaluation to prevent look-ahead bias and test temporal generalization.
+## 6. Common Trading Environment
+
+To ensure strict comparability, all four models will be trained and evaluated in the same simulated trading environment.
+
+- **Data:** Daily OHLCV data for a fixed universe of \(N\) equities.
+- **Decision Frequency:** One portfolio-rebalancing decision is made per trading day.
+- **Transaction Costs:** A fixed proportional transaction-cost rate \(c_{\mathrm{trans}}\) is applied to traded portfolio value.
+- **Slippage:** A fixed proportional slippage assumption may be incorporated into the effective transaction-cost rate.
+- **Portfolio Constraint:** Long-only allocation across \(N\) stocks and an explicit cash component.
+- **Evaluation:** Strict walk-forward training, validation (where required), and out-of-sample testing.
+
+### POMDP Formulation
+
+The daily trading problem is formulated as a Partially Observable Markov Decision Process (POMDP). The agent cannot observe all latent factors governing financial markets and therefore receives only a partial observation of the underlying environment.
+
+We define the POMDP as:
+
+$$
+\mathcal{P}=(\mathcal{S},\mathcal{A},\mathcal{T},\mathcal{R},\Omega,\gamma)
+$$
+
+where:
+
+- ${S}$: is the underlying environment state space,
+- \(\mathcal{A}\) is the action space,
+- \(\mathcal{T}\) represents the environment transition dynamics,
+- \(\mathcal{R}\) is the reward function,
+- \(\Omega\) is the observation space,
+- \(\gamma\in(0,1]\) is the PPO discount factor.
+
+At time \(t\), the agent receives an observation \(s_t\in\Omega\) containing only information available up to the current decision time. For M1, the policy operates directly on \(s_t\). For M2--M4, a sequence of observations is provided to an LSTM to construct a temporal representation \(h_t\).
+
+
 
 **MDP / POMDP Formulation:**
 Because financial markets are heavily influenced by unobservable latent factors, a standard MDP $(\mathcal{S}, \mathcal{A}, \mathcal{P}, \mathcal{R}, \gamma)$ is insufficient. The temporal information motivates a Partially Observable MDP (POMDP), formulated as $(\mathcal{O}, \mathcal{A}, \mathcal{P}, \mathcal{R}, \gamma)$, where the agent receives observations $o_t \in \mathcal{O}$ and utilizes an RNN (LSTM) to maintain a hidden belief state $h_t$ approximating the true market state.
 
 ## 7. State Representation
-The observation vector $o_t$ provided to the agent strictly contains data available at decision time $t$ (no look-ahead bias). It is divided into:
-1.  **Market Features:** Adjusted close prices and volumes (normalized).
-2.  **Technical Indicators:** MACD, RSI, CCI, ADX.
-3.  **Portfolio/Account Variables:** Current cash balance, current holdings (shares/weights), and total portfolio value.
+
+
+To avoid the pitfalls of raw price scaling, the observation state $s_t$ at step $t$ is strictly normalized and separated from raw portfolio values. We define the state as:
+
+$$s_t = [x_t; w_t^{cur}]$$
+
+where:
+1. $x_t \in \mathbb{R}^{N \times F}$ is the concatenated normalized feature vector. For each of the $N$ assets, the feature vector $f_{i,t} \in \mathbb{R}^F$ contains normalized returns, volumes, and technical indicators (e.g., MACD, RSI) up to time $t$. No raw prices or raw account balances are included.
+2. $w_t^{cur} \in \mathbb{R}^{N+1}$ represents the current portfolio weights (including cash) prior to taking the new action at step $t$.
+
+**Note on Temporal Context:** While the baseline M1 uses only the instantaneous state $s_t$, models M2–M4 process a temporal window $F_t = [s_{t-W+1}, \dots, s_t]$ (with $W=30$) through an LSTM to form a hidden representation $h_t$ that captures the POMDP dynamics of the market.
 
 ## 8. Action Space
-The action space $\mathcal{A}$ is a continuous vector $a_t \in [-1, 1]^N$ corresponding to the $N$ assets in the portfolio. 
-*   **Definition:** Each scalar $a_{t,i}$ represents the target portfolio weight for asset $i$. 
-*   **Constraint:** A Softmax or Dirichlet mapping will be applied post-network output to ensure $\sum_{i=1}^N w_{t,i} = 1$ and $w_{t,i} \ge 0$ (assuming a long-only constraint for equity basics).
+The action space $\mathcal{A}$ must ensure that portfolio weights are non-negative and sum to 1. Rather than predicting unbounded values and applying a post-hoc Softmax, we directly ground our continuous action space in the Dirichlet distribution formulation presented by **Yang et al. (2022)**.
+
+*   **Reference:** *Yang, H., Park, H., & Lee, K. (2022), "A Selective Portfolio Management Algorithm with Off-Policy Reinforcement Learning Using Dirichlet Distribution"*
+
+The action $a_t$ is defined exactly as the target portfolio weights:
+
+$$a_t \equiv w_t^{target}$$
+
+where $w_{i,t}^{target} \ge 0$ and $\sum_{i=1}^N w_{i,t}^{target} + w_{cash,t}^{target} = 1$.
+
+**Dirichlet Parameterization:**
+Following Yang et al., the policy network outputs the concentration parameters $\alpha_t$ of a Dirichlet distribution. To ensure $\alpha_t > 0$, we use an exponential mapping from the network's output logits $m_t$:
+
+$$m_t = W_a h_t + b_a$$
+$$\alpha_{i,t} = \exp(m_{i,t})$$
+
+The target weights are then sampled from the resulting Dirichlet distribution:
+
+$$w_t^{target} \sim \text{Dirichlet}(\alpha_t)$$
+
+The expected weight for each asset is naturally defined by the properties of the Dirichlet distribution:
+
+$$\mathbb{E}[w_{i,t}^{target}] = \frac{\alpha_{i,t}}{\sum_j \alpha_{j,t}}$$
+
+>  **[Yang et al. 2022](https://www.mdpi.com/2073-8994/14/3/605), "A Selective Portfolio Management Algorithm...", Section 3.3, Equations 13-16**
+
+<div style="text-align: center; margin-top: 15px;">
+  <p><i>📸 SCREENSHOT PLACEHOLDER: Yang et al. Section 3.3 (Equations 13-16)</i></p>
+</div>
+
+> *   **Purpose:** Establishes the literature-grounded mathematical mechanism for learning valid, continuous portfolio weights via Dirichlet concentration parameters. (Note: While Yang et al. apply this in an off-policy framework, we adopt the continuous action-space parameterization for our on-policy PPO).
 
 ## 9. Portfolio Dynamics and Cost Model
 To prevent inconsistent gross-vs-net discrepancies and double-counting, the cost model is defined exactly once and applies to all four models.
-*   **Total Portfolio Value ($V_t$):** $V_t = b_t + \sum_{i=1}^N h_{t,i} p_{t,i}$
-*   **Transaction Cost ($C_t$):** Computed based on the change in weights: $C_t = c_{trans} \sum_{i=1}^N |w_{t,i} - w_{t-1,i}| \times V_t$
-*   **Net Daily Return ($R_{net, t}$):** The true accounting return after all frictions:
-    $$R_{net, t} = \frac{V_t - V_{t-1}}{V_{t-1}} - \frac{C_t}{V_{t-1}}$$
-*   **Important:** $R_{net, t}$ represents the literal, measurable portfolio growth. It is the core input for all model reward functions.
+*   **Weight Change:** The allocation shift for asset i is the difference between the target weight and current weight:
+    Δw<sub>i,t</sub> = w<sub>i,t</sub><sup>target</sup> - w<sub>i,t</sub><sup>cur</sup>
+*   **Transaction Cost (C<sub>t</sub>):** The total monetary friction is proportional to the absolute change in weights, scaled by the pre-trade portfolio value V<sub>t-1</sub>:
+    C<sub>t</sub> = c<sub>trans</sub> × V<sub>t-1</sub> × Σ<sub>i</sub> |Δw<sub>i,t</sub>|
+*   **Total Portfolio Value (V<sub>t</sub>):** The post-trade portfolio value evolves based on the asset returns R<sub>i,t</sub> and the risk-free cash rate r<sub>f</sub>, *after* deducting the transaction cost:
+    V<sub>t</sub> = (V<sub>t-1</sub> - C<sub>t</sub>) × [Σ<sub>i</sub> w<sub>i,t</sub><sup>target</sup>(1 + R<sub>i,t</sub>) + w<sub>cash,t</sub><sup>target</sup>(1 + r<sub>f</sub>)]
+*   **Net Daily Return (R<sub>net,t</sub>):** The true accounting return after all frictions:
+    R<sub>net,t</sub> = (V<sub>t</sub> - V<sub>t-1</sub>) / V<sub>t-1</sub>
+*   **Important:** R<sub>net,t</sub> represents the literal, measurable portfolio growth. It is the core input for all model reward functions.
 
 ## 10. Four-Model Ablation: Detailed Mathematical Modelling
 
 ### M1 — PPO Baseline
 *   **Architecture:** Memoryless feed-forward Multi-Layer Perceptron (MLP) for both the actor $\pi_\theta(a_t|s_t)$ and critic $V_\phi(s_t)$ networks.
-*   **State Input:** Only the current step observation $s_t$.
+*   **State Input:** Only the instantaneous current step observation $s_t$.
 *   **Reward:** Direct net return, $r_t = R_{net, t}$ **(Liu et al. 2024, §3.1, p. 10)**.
-*   **Objective:** Standard Generalized Advantage Estimation (GAE) where $Â_t = δ_t + (γλ)δ_{t+1}$ +...  and  $δ_t = r_t + γV_φ(s_{t+1}) - V_φ(s_t)$. The actor is updated using the clipped surrogate objective:
+*   **Objective:** Standard Generalized Advantage Estimation (GAE) where $\hat{A}_t = \delta_t + (\gamma\lambda)\delta_{t+1} + \dots$ and $\delta_t = r_t + \gamma V_\phi(s_{t+1}) - V_\phi(s_t)$. The actor is updated using the clipped surrogate objective:
 
     $$L^{CLIP}(\theta) = \hat{\mathbb{E}}_t \left[ \min\left( \rho_t(\theta)\hat{A}_t, \text{clip}\left(\rho_t(\theta), 1-\epsilon, 1+\epsilon\right)\hat{A}_t \right) \right]$$
 
@@ -230,14 +296,13 @@ To prevent inconsistent gross-vs-net discrepancies and double-counting, the cost
 *   **Mechanism Added:** Temporal memory (LSTM) to handle POMDP nature of financial data.
 *   **Architecture:** Observation window $F_t = [s_{t-W+1}, \dots, s_t]$ is passed through an LSTM. The hidden state $h_t$ and cell state $c_t$ update recursively:
 
-    <!-- $$h_t, c_t = \text{LSTM}_{\text{cell}}(s_t, h_{t-1}, c_{t-1})$$ -->
-    $h_t, c_t = LSTM_{cell}(s_t, h_{t-1}, c_{t-1})$
+    $$h_t, c_t = LSTM_{cell}(s_t, h_{t-1}, c_{t-1})$$
        
-*   **Conditioning:** The policy and value functions are now conditioned on the hidden representation: $\pi_\theta(a_t | h_t)$ and $V_\phi(h_t)$.
+*   **Conditioning:** The policy and value functions are now conditioned on the hidden representation: $\pi_\theta(a_t | h_t)$ and $V_\phi(h_t)$. Note that the LSTM does not explicitly predict future prices; it forms a learned temporal representation $h_t$.
 *   **Parameters:** Rather than arbitrary tuning, we strictly adopt the architecture validated by **Zou et al. (2023, §4.5.1 & §4.5.2, p. 9)**: Time Window ($W$) = 30, Hidden Size (HS) = 512.
 *   **Reward:** Direct net return, $r_t = R_{net, t}$.
 
-> 📸 **[Zou et al. 2023](https://arxiv.org/pdf/2212.02721), "A Novel DRL Based Automated Stock Trading System...", p. 9**
+>  **[Zou et al. 2023](https://arxiv.org/pdf/2212.02721), "A Novel DRL Based Automated Stock Trading System...", p. 9**
 
 <div style="display: flex; justify-content: space-between; gap: 10px; align-items: flex-start;">
   <img src="ss/zou_etal_table2.png" alt="zou_etal_table2" width="510" height="180" style="flex: 1; max-width: 50%; display: block;">
@@ -262,7 +327,7 @@ To prevent inconsistent gross-vs-net discrepancies and double-counting, the cost
     **$\varepsilon$:** A small numerical-stability constant (e.g., $10^{-8}$) added to the DSR denominator to prevent instability when the estimated variance approaches zero.
 *   **Reward:** $r_t = D_t$.
 
-> 📸 **[Millea 2021](https://www.mdpi.com/2306-5729/6/11/119), "Deep Reinforcement Learning for Trading—A Critical Survey", p. 8, Section 5.1.2**
+>  **[Millea 2021](https://www.mdpi.com/2306-5729/6/11/119), "Deep Reinforcement Learning for Trading—A Critical Survey", p. 8, Section 5.1.2**
 
 <div style="display: flex; justify-content: space-between; gap: 10px; align-items: flex-start;">
   <img src="ss/Millea2021_DSR1.png" alt="Millea2021_DSR1" width="510" height="150" style="flex: 1; max-width: 50%; display: block;">
@@ -275,7 +340,7 @@ To prevent inconsistent gross-vs-net discrepancies and double-counting, the cost
 *   **Mechanism Added:** Action-friction control to regularize churn.
 *   **Formulation:** DSR mathematically incentivizes the agent to capture tiny, high-Sharpe anomalies, leading to high-frequency action oscillation ("churn"). In live markets, slippage destroys these theoretical returns. To strictly isolate friction-control from risk-sensitivity (M3 → M4 comparison), the turnover penalty must be additive. 
 
-    $$r_t = D_t - \lambda_{turnover} \cdot \sum_{i=1}^N (a_{t,i} - a_{t-1,i})^2$$
+    $$r_t = D_t - \lambda_{turnover} \sum_{i=1}^N (w_{i,t}^{target} - w_{i,t}^{cur})^2$$
     
 *   **Note:** This penalty $\lambda_{turnover}$ only punishes the RL *reward signal* to discourage churning. The actual portfolio simulation already accounts for true transaction costs in $R_{net, t}$. Comparing M3 to M4 will explicitly test the hypothesis that regularizing action outputs stabilizes the LSTM memory mechanism.
 
@@ -306,7 +371,7 @@ Financial time series are non-stationary, and model performance can depend stron
 4. Roll the entire window forward by $n$ days and repeat.
 
 
-> 📸 **[Liu et al. 2024](https://link.springer.com/article/10.1007/s10994-023-06511-w) "Dynamic datasets and market environments...", p. 13, Figure 5**
+>  **[Liu et al. 2024](https://link.springer.com/article/10.1007/s10994-023-06511-w) "Dynamic datasets and market environments...", p. 13, Figure 5**
 
 <div style="text-align: center; margin-top: 15px;">
   <img src="ss/Liu_et_al_p13.png" alt="Liu_et_al_p13" width="420" height="240" style="display: block; margin: 0 auto;">  
@@ -327,7 +392,7 @@ The final out-of-sample arrays will be concatenated and evaluated using standard
 
 Turnover and transaction cost are particularly important diagnostics for evaluating the effect of M4.
 
-> 📸 **[Huang et al. 2024](https://www.mdpi.com/2227-7390/12/24/4020) "A Self-Rewarding Mechanism...", p. 12, Section 4.2**
+>  **[Huang et al. 2024](https://www.mdpi.com/2227-7390/12/24/4020) "A Self-Rewarding Mechanism...", p. 12, Section 4.2**
 
 <div style="text-align: center; margin-top: 15px;">
   <img src="ss/Huang_et_a_p12_sec4_2.png" alt="Huang_et_a_p12_sec4_2" width="470" height="240" style="display: block; margin: 0 auto;">   
