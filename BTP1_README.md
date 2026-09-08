@@ -269,14 +269,7 @@ Raw price levels and raw portfolio/account dollar values are not directly provid
 
 The market-feature vector is obtained by concatenating the feature vectors of all \(N\) assets:
 
-$$
-x_t=
-\operatorname{concat}
-\left(
-f_{1,t},f_{2,t},\ldots,f_{N,t}
-\right)
-\in\mathbb{R}^{13N}.
-$$
+$$x_t = \operatorname{concat}\left(f_{1,t},f_{2,t},\ldots,f_{N,t}\right)\in\mathbb{R}^{13N}$$
 
 The complete observation additionally includes the current portfolio weights:
 
@@ -336,17 +329,11 @@ For M1, only the current observation $s_t$ is provided to the policy.
 
 For M2--M4, a historical observation window of length $W$ is constructed:
 
-$$
-F_t=
-[s_{t-W+1},\ldots,s_{t-1},s_t]
-$$
+$$F_t = [s_{t-W+1},\ldots,s_{t-1},s_t]$$
 
 where:
 
-$$
-F_t\in
-\mathbb{R}^{W\times(NF+N+1)}.
-$$
+$$F_t\in\mathbb{R}^{W\times(NF+N+1)}.$$
 
 The sequence $F_t$ is processed by an LSTM to produce the hidden representation:
 
@@ -382,6 +369,14 @@ $$\alpha_{i,t} = \exp(m_{i,t})$$
 The target weights are then sampled from the resulting Dirichlet distribution:
 
 $$w_t^{target} \sim \text{Dirichlet}(\alpha_t)$$
+
+### Addressing the Dirichlet Sparsity Limitation (Weight Thresholding)
+
+A mathematical limitation of the standard Dirichlet distribution is that its support lies on the open simplex $(0, 1)$. It mathematically cannot output an exact $0$. In practical portfolio management, sparsity is critical: an agent must be able to hold $0\%$ of an underperforming stock to avoid continuous, microscopic rebalancing (e.g., adjusting a weight from $0.002$ to $0.001$) that bleeds capital through transaction fees.To enforce sparsity, prevent micro-churn, and make the continuous action space viable for real-world transaction costs, we apply a deterministic thresholding mask to the sampled weights before passing them to the portfolio environment.
+
+1. Thresholding:Apply a minimum allocation boundary $\tau$ (e.g., $\tau = 0.01$ or $1\%$). If a generated weight falls below this threshold, it is forced to zero:$$\tilde{w}_{i,t}^{target} = \begin{cases} 0, & \text{if } w_{i,t}^{target} < \tau \\ w_{i,t}^{target}, & \text{otherwise} \end{cases}$$
+
+2. Renormalization:Re-normalize the remaining active weights to ensure the portfolio constraint $\sum w_i = 1$ is maintained:$$w_{i,t}^{final} = \frac{\tilde{w}_{i,t}^{target}}{\sum_{j} \tilde{w}_{j,t}^{target}}$$The environment and transaction cost models will execute the portfolio rebalancing based exclusively on $w_t^{final}$. This mathematically bridges the gap between the continuous, strictly positive probability density of the Dirichlet actor and the sparse allocation reality of financial markets.
 
 The expected weight for each asset is naturally defined by the properties of the Dirichlet distribution:
 
@@ -624,6 +619,11 @@ Turnover and transaction cost are particularly important diagnostics for evaluat
 | ------- | ------------------ | ----------- | ----------------------------- | -------------------- | ---------------------------------------------------- |
 | [TODO]  | [TODO]             | [TODO]      | [TODO / literature-supported] | Multiple fixed seeds (e.g. 42, 100, 999 ~ *tentative*) | CR, AR, SR, Sortino, MDD, Volatility, Turnover, Cost |
 
+---
+
+Hyperparameter Tuning Protocol (Isolating $\eta$ and $\lambda_{\text{turn}}$)To prevent data leakage, the DSR adaptation rate ($\eta$) and turnover regularization coefficient ($\lambda_{\text{turn}}$) will not be arbitrarily set. They will be selected via grid search exclusively on the validation folds ($T_k \rightarrow T_{k+m}$) prior to out-of-sample testing.$\eta$ (Memory Decay): Will be searched over $[0.01, 0.05, 0.1]$, where $\eta = 0.05$ roughly corresponds to a 20-day half-life, aligning the risk calculation with a monthly trading horizon.$\lambda_{\text{turn}}$ (Friction Penalty): Will be tuned to ensure the penalty magnitude is proportional to the average step-level DSR gradient, preventing the regularization term from completely dominating the policy update or being ignored.
+
+----
 
 ## 15. Expected Analysis
 
