@@ -269,7 +269,7 @@ Raw price levels and raw portfolio/account dollar values are not directly provid
 
 The market-feature vector is obtained by concatenating the feature vectors of all \(N\) assets:
 
-$$x_t = \operatorname{concat}\left(f_{1,t},f_{2,t},\ldots,f_{N,t}\right)\in\mathbb{R}^{13N}$$
+$$x_t = concat\left(f_{1,t},f_{2,t},\ldots,f_{N,t}\right)\in\mathbb{R}^{13N}$$
 
 The complete observation additionally includes the current portfolio weights:
 
