@@ -473,11 +473,7 @@ The cash component is assumed to have zero return over the daily holding period 
 
 The realized net portfolio return is:
 
-$$
-R_{net,t}
-=
-\frac{V_t-V_{t-1}}{V_{t-1}}.
-$$
+$$R_{net,t} = \frac{V_t-V_{t-1}}{V_{t-1}}$$
 
 Because transaction costs are already deducted when computing $V_t$, they are not subtracted again from $R_{net,t}$.
 
