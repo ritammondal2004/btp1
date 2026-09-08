@@ -193,9 +193,12 @@ To ensure strict comparability, all four models will be trained and evaluated in
 
 - **Data:** Daily OHLCV data for a fixed universe of \(N\) equities.
 - **Decision Frequency:** One portfolio-rebalancing decision is made per trading day.
-- **Transaction Costs:** A fixed proportional transaction-cost rate \(c_{\mathrm{trans}}\) is applied to traded portfolio value.
+- **Transaction Costs:** A fixed pro
+- **Data:** Daily OHLCV data for a fixed universe of $N$ equities.
+- **Decision Frequency:** One portfolio-rebalancing decision is made per trading day.
+- **Transaction Costs:** A fixed proportional transaction-cost rate $c_{\mathrm{trans}}$ is applied to traded portfolio value.
 - **Slippage:** A fixed proportional slippage assumption may be incorporated into the effective transaction-cost rate.
-- **Portfolio Constraint:** Long-only allocation across \(N\) stocks and an explicit cash component.
+- **Portfolio Constraint:** Long-only allocation across $N$ stocks and an explicit cash component.
 - **Evaluation:** Strict walk-forward training, validation (where required), and out-of-sample testing.
 
 ### POMDP Formulation
@@ -211,13 +214,13 @@ $$
 where:
 
 - ${S}$: is the underlying environment state space,
-- \(\mathcal{A}\) is the action space,
-- \(\mathcal{T}\) represents the environment transition dynamics,
-- \(\mathcal{R}\) is the reward function,
-- \(\Omega\) is the observation space,
-- \(\gamma\in(0,1]\) is the PPO discount factor.
+- $\mathcal{A}$ is the action space,
+- $\mathcal{T}$ represents the environment transition dynamics,
+- $\mathcal{R}$ is the reward function,
+- $\Omega$ is the observation space,
+- $\gamma\in(0,1]$ is the PPO discount factor.
 
-At time \(t\), the agent receives an observation \(s_t\in\Omega\) containing only information available up to the current decision time. For M1, the policy operates directly on \(s_t\). For M2--M4, a sequence of observations is provided to an LSTM to construct a temporal representation \(h_t\).
+At time $t$, the agent receives an observation $s_t\in\Omega$ containing only information available up to the current decision time. For M1, the policy operates directly on $s_t$. For M2--M4, a sequence of observations is provided to an LSTM to construct a temporal representation $h_t$.
 
 
 
@@ -227,15 +230,15 @@ Because financial markets are heavily influenced by unobservable latent factors,
 
 ## 7. State / Observation Representation
 
-The observation provided to the agent contains only information available at decision time \(t\), with all feature transformations computed causally to avoid look-ahead bias.
+The observation provided to the agent contains only information available at decision time $t$, with all feature transformations computed causally to avoid look-ahead bias.
 
-For each asset \(i\in\{1,\ldots,N\}\), define the per-asset feature vector:
+For each asset $i\in\{1,\ldots,N\}$, define the per-asset feature vector:
 
 $$
 f_{i,t}\in\mathbb{R}^{F}
 $$
 
-where \(F\) is the number of features per asset.
+where $F$ is the number of features per asset.
 
 The feature vector contains normalized return, price-relative, volume, and technical-indicator information, including:
 
@@ -245,17 +248,16 @@ The feature vector contains normalized return, price-relative, volume, and techn
 - RSI,
 - MACD,
 - EMA-relative features,
-- Bollinger \(\%B\) and bandwidth,
+- Bollinger $\%B$ and bandwidth,
 - CCI,
 - ADX.
 
 Raw price levels and raw portfolio/account dollar values are not directly provided to the agent.
 
-The market feature vector is formed by concatenating the feature vectors of all \(N\) assets:
+The market feature vector is formed by concatenating the feature vectors of all $N$ assets:
 
-$$
-x_t=
-\operatorname{concat}
+$$x_t=
+\text{concat}
 \left(
 f_{1,t},f_{2,t},\ldots,f_{N,t}
 \right)
@@ -305,18 +307,18 @@ $$
 
 Here:
 
-- \(N\) = number of stocks in the trading universe,
-- \(F\) = number of features per stock,
-- \(f_{i,t}\) = feature vector of asset \(i\) at time \(t\),
-- \(x_t\) = concatenated market-feature vector,
-- \(w_t^{cur}\) = current portfolio weights including cash,
-- \(s_t\) = complete observation available to the RL agent.
+- $N$ = number of stocks in the trading universe,
+- $F$ = number of features per stock,
+- $f_{i,t}$ = feature vector of asset $i$ at time $t$,
+- $x_t$ = concatenated market-feature vector,
+- $w_t^{cur}$ = current portfolio weights including cash,
+- $s_t$ = complete observation available to the RL agent.
 
 ### Temporal Representation
 
-For M1, only the current observation \(s_t\) is provided to the policy.
+For M1, only the current observation $s_t$ is provided to the policy.
 
-For M2--M4, a historical observation window of length \(W\) is constructed:
+For M2--M4, a historical observation window of length $W$ is constructed:
 
 $$
 F_t=
@@ -330,15 +332,15 @@ F_t\in
 \mathbb{R}^{W\times(NF+N+1)}.
 $$
 
-The sequence \(F_t\) is processed by an LSTM to produce the hidden representation:
+The sequence $F_t$ is processed by an LSTM to produce the hidden representation:
 
 $$
 (h_t,c_t)
 =
-\operatorname{LSTM}(F_t),
+\text{LSTM}(F_t),
 $$
 
-where \(h_t\in\mathbb{R}^{H}\) is the hidden representation and \(c_t\in\mathbb{R}^{H}\) is the LSTM cell state. \(H\) denotes the LSTM hidden size.
+where $h_t\in\mathbb{R}^{H}$ is the hidden representation and $c_t\in\mathbb{R}^{H}$ is the LSTM cell state. $H$ denotes the LSTM hidden size.
 
 For the initial BTP-1 configuration:
 
@@ -375,14 +377,14 @@ $$\mathbb{E}[w_{i,t}^{target}] = \frac{\alpha_{i,t}}{\sum_j \alpha_{j,t}}$$
 
 Here:
 
-- \(a_t\) = RL action at time \(t\),
-- \(w_t^{target}\) = target portfolio weights selected by the agent,
-- \(w_{i,t}^{target}\) = target weight of stock \(i\),
-- \(w_{cash,t}^{target}\) = target cash weight,
-- \(\alpha_t\) = Dirichlet concentration-parameter vector,
-- \(m_t\) = unconstrained actor output,
-- \(W_a,b_a\) = parameters of the actor's final layer,
-- \(h_t\) = LSTM hidden representation for M2--M4.
+- $a_t$ = RL action at time $t$,
+- $w_t^{target}$ = target portfolio weights selected by the agent,
+- $w_{i,t}^{target}$ = target weight of stock $i$,
+- $w_{cash,t}^{target}$ = target cash weight,
+- $\alpha_t$ = Dirichlet concentration-parameter vector,
+- $m_t$ = unconstrained actor output,
+- $W_a,b_a$ = parameters of the actor's final layer,
+- $h_t$ = LSTM hidden representation for M2--M4.
 
 The Dirichlet formulation is motivated by Yang et al. (2022), who use the Dirichlet distribution to model portfolio allocations on the simplex. Their formulation is adapted here to the on-policy PPO setting used in BTP-1.
 
@@ -419,26 +421,26 @@ $$
 
 For each traded stock, the change in allocation is:
 
-Δw<sub>i,t</sub> = w<sub>i,t</sub><sup>target</sup> - w<sub>i,t</sub><sup>cur</sup>
+ $\Delta w_{i,t} = w_{i,t}^{target} - w_{i,t}^{cur}$
 
 Here:
 
-- Δw<sub>i,t</sub> > 0 indicates an increase in allocation,
-- Δw<sub>i,t</sub> < 0 indicates a decrease in allocation,
-- Δw<sub>i,t</sub> = 0 indicates no change.
+- $\Delta w_{i,t}$ > 0 indicates an increase in allocation,
+- $\Delta w_{i,t}$ < 0 indicates a decrease in allocation,
+- $\Delta w_{i,t}$ = 0 indicates no change.
 
 ### 9.2 Transaction Cost
 
 Transaction cost is modeled as proportional to the absolute amount reallocated:
 
-C<sub>t</sub> = c<sub>trans</sub> × V<sub>t-1</sub> × Σ<sub>i=1</sub><sup>N</sup> |Δw<sub>i,t</sub>|
+ $C_t = c_{trans} V_{t-1} \sum_{i=1}^N |\Delta w_{i,t}| $
 
 where:
 
 - C<sub>t</sub> = monetary transaction cost at time t,
 - c<sub>trans</sub> = proportional transaction-cost rate,
 - V<sub>t-1</sub> = portfolio value immediately before rebalancing,
-- Δw<sub>i,t</sub> = change in stock i's portfolio weight.
+- $\Delta w_{i,t}$ = change in stock i's portfolio weight.
 
 The cash component is not separately charged; cash is the residual portfolio allocation after stock rebalancing.
 
@@ -460,10 +462,10 @@ $$
 
 Here:
 
-- \(V_t\) = portfolio value at the end of period \(t\),
-- \(R_{i,t}\) = realized return of stock \(i\) over period \(t\),
-- \(w_{i,t}^{target}\) = target weight allocated to stock \(i\),
-- \(w_{cash,t}^{target}\) = target cash allocation.
+- $V_t$ = portfolio value at the end of period $t$,
+- $R_{i,t}$ = realized return of stock $i$ over period $t$,
+- $w_{i,t}^{target}$ = target weight allocated to stock $i$,
+- $w_{cash,t}^{target}$ = target cash allocation.
 
 The cash component is assumed to have zero return over the daily holding period for BTP-1; therefore, no risk-free-rate term is included in the portfolio wealth equation.
 
@@ -477,9 +479,9 @@ R_{net,t}
 \frac{V_t-V_{t-1}}{V_{t-1}}.
 $$
 
-Because transaction costs are already deducted when computing \(V_t\), they are not subtracted again from \(R_{net,t}\).
+Because transaction costs are already deducted when computing $V_t$, they are not subtracted again from $R_{net,t}$.
 
-Thus, \(R_{net,t}\) is the single accounting measure of realized portfolio growth after modeled trading frictions and is used as the direct reward for M1 and M2 and as the return input to the DSR calculation for M3 and M4.
+Thus, $R_{net,t}$ is the single accounting measure of realized portfolio growth after modeled trading frictions and is used as the direct reward for M1 and M2 and as the return input to the DSR calculation for M3 and M4.
 
 
 
@@ -657,52 +659,52 @@ This project proposes a controlled empirical ablation study progressing from PPO
 
 | Symbol | Meaning |
 |---|---|
-| \(t\) | Trading day / decision time |
-| \(i\) | Asset index |
-| \(N\) | Number of stocks in the trading universe |
-| \(F\) | Number of input features per asset |
-| \(f_{i,t}\) | Feature vector of asset \(i\) at time \(t\), \(f_{i,t}\in\mathbb{R}^F\) |
-| \(x_t\) | Concatenated market-feature vector, \(x_t\in\mathbb{R}^{NF}\) |
-| \(w_t^{cur}\) | Current portfolio-weight vector including cash |
-| $w_{i,t}^{cur}$ | Current portfolio weight of stock \(i\) |
-| \(w_t^{target}\) | Target portfolio-weight vector selected by the agent |
-| \(w_{i,t}^{target}\) | Target portfolio weight of stock \(i\) |
-| \(w_{cash,t}^{target}\) | Target cash allocation |
-| \(s_t\) | Complete agent observation at time \(t\) |
-| \(W\) | Historical lookback-window length |
-| \(F_t\) | Sequence of the previous \(W\) observations |
-| \(H\) | LSTM hidden-state dimension |
-| \(h_t\) | LSTM hidden representation |
-| \(c_t\) | LSTM cell state |
-| \(a_t\) | RL action, defined as \(a_t\equiv w_t^{target}\) |
-| \(m_t\) | Unconstrained actor output before Dirichlet parameterization |
-| \(W_a,b_a\) | Parameters of the actor's final layer |
-| \(\alpha_t\) | Dirichlet concentration-parameter vector |
-| \(\alpha_{i,t}\) | Dirichlet concentration parameter for component \(i\) |
-| \(\Delta w_{i,t}\) | Change in stock \(i\)'s portfolio allocation |
-| \(V_t\) | Total portfolio value at the end of period \(t\) |
-| \(C_t\) | Monetary transaction cost at time \(t\) |
-| \(c_{\mathrm{trans}}\) | Proportional transaction-cost rate |
-| \(R_{i,t}\) | Realized return of stock \(i\) during period \(t\) |
-| \(R_{net,t}\) | Net portfolio return after modeled trading costs |
-| \(r_t\) | RL reward at time \(t\) |
-| \(A_t\) | Exponentially weighted first moment of net returns for DSR |
-| \(B_t\) | Exponentially weighted second moment of net returns for DSR |
-| \(D_t\) | Differential Sharpe Ratio reward |
-| \(\eta\) | DSR moving-average adaptation rate |
-| \(\varepsilon_{\mathrm{DSR}}\) | Numerical-stability constant in the DSR denominator |
-| \(\lambda_{\mathrm{turn}}\) | Turnover-regularization coefficient |
-| \(\gamma\) | PPO discount factor |
-| \(\lambda_{\mathrm{GAE}}\) | GAE bias-variance trade-off parameter |
-| \(\epsilon_{\mathrm{PPO}}\) | PPO clipping parameter |
-| \(\hat{A}_t\) | Estimated advantage used by PPO |
-| \(\delta_t\) | One-step temporal-difference error used by GAE |
-| \(\pi_\theta\) | PPO policy parameterized by \(\theta\) |
-| \(V_\phi\) | PPO critic/value function parameterized by \(\phi\) |
-| \(\rho_t\) | PPO probability ratio between new and old policies |
-| \(\mathcal{S}\) | Underlying environment state space |
-| \(\Omega\) | Observation space available to the agent |
-| \(\mathcal{A}\) | Action space |
-| \(\mathcal{T}\) | Environment transition dynamics |
-| \(\mathcal{R}\) | Reward function |
-| \(R_{net,t}\) | Realized net portfolio return used by M1/M2 and DSR |
+| $t$ | Trading day / decision time |
+| $i$ | Asset index |
+| $N$ | Number of stocks in the trading universe |
+| $F$ | Number of input features per asset |
+| $f_{i,t}$ | Feature vector of asset $i$ at time $t$, $f_{i,t}\in\mathbb{R}^F$ |
+| $x_t$ | Concatenated market-feature vector, $x_t\in\mathbb{R}^{NF}$ |
+| $w_t^{cur}$ | Current portfolio-weight vector including cash |
+| $w_{i,t}^{cur}$ | Current portfolio weight of stock $i$ |
+| $w_t^{target}$ | Target portfolio-weight vector selected by the agent |
+| $w_{i,t}^{target}$ | Target portfolio weight of stock $i$ |
+| $w_{cash,t}^{target}$ | Target cash allocation |
+| $s_t$ | Complete agent observation at time $t$ |
+| $W$ | Historical lookback-window length |
+| $F_t$ | Sequence of the previous $W$ observations |
+| $H$ | LSTM hidden-state dimension |
+| $h_t$ | LSTM hidden representation |
+| $c_t$ | LSTM cell state |
+| $a_t$ | RL action, defined as $a_t\equiv w_t^{target}$ |
+| $m_t$ | Unconstrained actor output before Dirichlet parameterization |
+| $W_a,b_a$ | Parameters of the actor's final layer |
+| $\alpha_t$ | Dirichlet concentration-parameter vector |
+| $\alpha_{i,t}$ | Dirichlet concentration parameter for component $i$ |
+| $\Delta w_{i,t}$ | Change in stock $i$'s portfolio allocation |
+| $V_t$ | Total portfolio value at the end of period $t$ |
+| $C_t$ | Monetary transaction cost at time $t$ |
+| $c_{\mathrm{trans}}$ | Proportional transaction-cost rate |
+| $R_{i,t}$ | Realized return of stock $i$ during period $t$ |
+| $R_{net,t}$ | Net portfolio return after modeled trading costs |
+| $r_t$ | RL reward at time $t$ |
+| $A_t$ | Exponentially weighted first moment of net returns for DSR |
+| $B_t$ | Exponentially weighted second moment of net returns for DSR |
+| $D_t$ | Differential Sharpe Ratio reward |
+| $\eta$ | DSR moving-average adaptation rate |
+| $\varepsilon_{\mathrm{DSR}}$ | Numerical-stability constant in the DSR denominator |
+| $\lambda_{\mathrm{turn}}$ | Turnover-regularization coefficient |
+| $\gamma$ | PPO discount factor |
+| $\lambda_{\mathrm{GAE}}$ | GAE bias-variance trade-off parameter |
+| $\epsilon_{\mathrm{PPO}}$ | PPO clipping parameter |
+| $\hat{A}_t$ | Estimated advantage used by PPO |
+| $\delta_t$ | One-step temporal-difference error used by GAE |
+| $\pi_\theta$ | PPO policy parameterized by $\theta$ |
+| $V_\phi$ | PPO critic/value function parameterized by $\phi$ |
+| $\rho_t$ | PPO probability ratio between new and old policies |
+| $\mathcal{S}$ | Underlying environment state space |
+| $\Omega$ | Observation space available to the agent |
+| $\mathcal{A}$ | Action space |
+| $\mathcal{T}$ | Environment transition dynamics |
+| $\mathcal{R}$ | Reward function |
+| $R_{net,t}$ | Realized net portfolio return used by M1/M2 and DSR |
