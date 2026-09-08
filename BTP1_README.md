@@ -237,7 +237,21 @@ $$
 f_{i,t}\in\mathbb{R}^{F}
 $$
 
-where $F$ is the number of features per asset.
+where $F$ is the number of features per asset.  
+
+For each asset $(i\in\{1,\ldots,N\})$, define the per-asset feature vector:
+
+$$
+f_{i,t}=
+\begin{bmatrix}
+ r_{i,t} ,  \frac{O_{i,t}}{C_{i,t}}-1 , \frac{H_{i,t}}{C_{i,t}}-1 , \frac{L_{i,t}}{C_{i,t}}-1 , \tilde v_{i,t} , \frac{RSI_{i,t}}{50}-1 & MACD_{i,t} , \frac{EMA^{fast}_{i,t}}{C_{i,t}}-1 , \frac{EMA^{slow}_{i,t}}{C_{i,t}}-1 , \%B_{i,t} , BW_{i,t} , \frac{CCI_{i,t}}{100} , \frac{ADX_{i,t}}{100}
+\end{bmatrix}^{\top}
+\in\mathbb{R}^{13}
+$$
+
+where $(r_{i,t})$ is the log return, $(\tilde v_{i,t})$ is the causally normalized volume, and the remaining terms represent price-relative and technical-indicator information.
+
+
 
 The feature vector contains normalized return, price-relative, volume, and technical-indicator information, including:
 
@@ -253,14 +267,27 @@ The feature vector contains normalized return, price-relative, volume, and techn
 
 Raw price levels and raw portfolio/account dollar values are not directly provided to the agent.
 
-The market feature vector is formed by concatenating the feature vectors of all $N$ assets:
+The market-feature vector is obtained by concatenating the feature vectors of all \(N\) assets:
 
-$$x_t=
-\text{concat}
+$$
+x_t=
+\operatorname{concat}
 \left(
 f_{1,t},f_{2,t},\ldots,f_{N,t}
 \right)
-\in\mathbb{R}^{NF}.
+\in\mathbb{R}^{13N}.
+$$
+
+The complete observation additionally includes the current portfolio weights:
+
+$$
+s_t=
+\left[
+x_t;
+w_t^{cur}
+\right]
+\in
+\mathbb{R}^{13N+N+1}.
 $$
 
 The portfolio state is represented by the current portfolio-weight vector:
@@ -620,13 +647,51 @@ We will proactively investigate and report failure modes. If a model performs po
 
 
 ## 17. BTP-2 / MTP Future Direction
-**BTP-2 will be guided by the failure modes identified in BTP-1**. Depending on the observed limitations of the final configuration, possible extensions include regime-aware or adaptive risk-sensitive DRL. More advanced extensions such as multi-agent or self-rewarding approaches will be considered in later MTP stages.
 
-## 18. Final Summary
-This project proposes a controlled empirical ablation study progressing from PPO to LSTM-PPO, DSR-based reward shaping, and turnover regularization. By maintaining consistent datasets, costs, training conditions, and walk-forward evaluation, the study aims to isolate the incremental contribution of temporal memory, risk-aware reward design, and turnover control. The resulting performance and failure analysis will provide an evidence-based basis for selecting the direction of BTP-2.
+**BTP-2 will be guided by the failure modes and empirical findings identified in BTP-1.** Rather than introducing advanced techniques arbitrarily, the next stage will address the specific limitations observed in the best-performing BTP-1 configuration.
 
+A primary direction for BTP-2 is to move from portfolio-level allocation decisions toward **explicit asset-level trading decisions**. For each stock \(i\) at time \(t\), the agent may be designed to output:
 
-----
+$$
+a_{i,t}\in\{\mathrm{BUY},\mathrm{HOLD},\mathrm{SELL}\}.
+$$
+
+The BTP-2 framework may also incorporate an auxiliary prediction task for future price movement or future return over a selected horizon:
+
+$$
+y_{i,t}^{(H)}
+=
+\frac{P_{i,t+H}-P_{i,t}}{P_{i,t}}.
+$$
+
+This would allow the model to study both **trading decisions** and **future market-movement prediction** within a unified framework.
+
+Depending on the failure modes identified in BTP-1, further extensions may include regime-aware or adaptive risk-sensitive decision-making. More advanced approaches, such as multi-agent reinforcement learning or self-rewarding mechanisms, will be considered only if they provide a clear research justification based on the BTP-1 results.
+
+## 18. Limitations
+
+The proposed BTP-1 framework has several deliberate limitations.
+
+First, the main ablation uses a **fixed trading universe and fixed number of assets \(N\)** across all four models. This is intentional because changing the asset universe between models would introduce an additional source of variation and weaken the controlled comparison. Consequently, the current flat concatenation architecture is not intended to support an arbitrary number of assets without modification.
+
+Second, BTP-1 focuses on **daily-frequency equity trading** and therefore does not model intraday microstructure, order-book dynamics, latency, or high-frequency execution effects.
+
+Third, the transaction-cost model captures proportional trading costs but does not fully reproduce all real-world market frictions, such as market impact, bid-ask spread dynamics, slippage variation, and liquidity constraints.
+
+Fourth, the current state representation is based on engineered market and technical features. It does not explicitly incorporate richer information sources such as order-flow data, news, fundamentals, or alternative data.
+
+Finally, the conclusions of BTP-1 will depend on the selected assets, market period, transaction-cost assumptions, and experimental design. Therefore, strong out-of-sample and cross-asset validation will be important before drawing broader conclusions about the generality of the learned trading policy.
+
+## 19. Final Summary
+
+This project proposes a controlled empirical ablation study progressing from PPO to LSTM-PPO, DSR-based reward shaping, and turnover regularization. By maintaining consistent datasets, trading universe, transaction-cost assumptions, training conditions, and walk-forward evaluation, the study aims to isolate the incremental contribution of temporal memory, risk-aware reward design, and turnover control.                                         
+                                                      
+The primary objective of BTP-1 is therefore not to develop a universally applicable trading agent, but to establish a **rigorous and reproducible understanding of how these components affect out-of-sample trading performance and failure modes**.        
+                                                           
+The resulting performance and failure analysis will provide an evidence-based basis for selecting the direction of BTP-2, including the transition toward asset-level BUY/HOLD/SELL decisions and future market-movement prediction where justified by the BTP-1 findings.
+                              
+                          
+----                       
 
 ### Mathematical Notation and Parameters
 
